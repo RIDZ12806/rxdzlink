@@ -35,18 +35,18 @@ export const Route = createFileRoute("/")({
 const GAME_URL = "https://ro.blox.com/Ebh5?pid=share&is_retargeting=true&af_dp";
 
 const socials = [
-  { name: "TikTok", handle: "@rx_._dz", image: tiktokIcon.url, href: "https://tiktok.com/@rx_._dz" },
-  { name: "Telegram", handle: "t.me/RX0DZ", image: telegramIcon.url, href: "https://t.me/RX0DZ" },
+  { name: "TikTok", handle: "@rx_._dz", Icon: TikTokIcon, href: "https://tiktok.com/@rx_._dz" },
+  { name: "Telegram", handle: "t.me/RX0DZ", Icon: TelegramIcon, href: "https://t.me/RX0DZ" },
   {
     name: "Discord",
     handle: "discord.gg/QnYXtYVhW",
-    image: discordIcon.url,
+    Icon: DiscordIcon,
     href: "https://discord.gg/QnYXtYVhW",
   },
   {
     name: "YouTube",
     handle: "@rxdz29",
-    image: youtubeIcon.url,
+    Icon: YouTubeIcon,
     href: "https://youtube.com/@rxdz29?si=uE3pv8DyAjyzzcdy",
   },
 ];
@@ -205,7 +205,7 @@ function Index() {
                 <SocialCard
                   name={s.name}
                   handle={s.handle}
-                  image={s.image}
+                  Icon={s.Icon}
                   href={s.href}
                   delayIndex={i}
                 />
