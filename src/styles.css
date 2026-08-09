@@ -189,7 +189,34 @@
   }
 }
 
+@keyframes border-spin {
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@utility neon-frame {
+  position: relative;
+  border-radius: var(--radius-3xl);
+  padding: 3px;
+  background: conic-gradient(
+    from var(--border-angle),
+    color-mix(in oklab, var(--neon) 85%, transparent),
+    color-mix(in oklab, var(--neon-soft) 90%, transparent),
+    color-mix(in oklab, var(--deep) 90%, transparent),
+    color-mix(in oklab, var(--neon) 85%, transparent)
+  );
+  animation: border-spin 7s linear infinite;
+}
+
 @keyframes robux-pop {
+
   0% {
     opacity: 0;
     transform: translateY(0) scale(0.4) rotate(0deg);
