@@ -4,10 +4,12 @@ import { Reveal } from "@/components/site/reveal";
 import { RippleLink } from "@/components/site/ripple-link";
 import { SocialCard } from "@/components/site/social-card";
 import gameHero from "@/assets/game-hero.png.asset.json";
-import tiktokIcon from "@/assets/tiktok.webp.asset.json";
-import telegramIcon from "@/assets/telegram.webp.asset.json";
-import discordIcon from "@/assets/discord.webp.asset.json";
-import youtubeIcon from "@/assets/youtube.png.asset.json";
+import {
+  TikTokIcon,
+  TelegramIcon,
+  DiscordIcon,
+  YouTubeIcon,
+} from "@/components/site/brand-icons";
 
 export const Route = createFileRoute("/")({
   head: () => ({
