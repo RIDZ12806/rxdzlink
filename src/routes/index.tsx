@@ -197,7 +197,7 @@ function Index() {
             </div>
           </Reveal>
 
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div dir="ltr" className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {socials.map((s, i) => (
               <Reveal key={s.name} delay={i * 110}>
                 <SocialCard
