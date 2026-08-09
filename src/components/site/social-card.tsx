@@ -1,16 +1,16 @@
-import { useRef, type MouseEvent } from "react";
+import { useRef, type ComponentType, type MouseEvent, type SVGProps } from "react";
 import { RippleLink } from "./ripple-link";
 
 export function SocialCard({
   name,
   handle,
-  image,
+  Icon,
   href,
   delayIndex,
 }: {
   name: string;
   handle: string;
-  image: string;
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
   href: string;
   delayIndex: number;
 }) {
@@ -41,7 +41,8 @@ export function SocialCard({
         ref={cardRef}
         onMouseMove={onMove}
         onMouseLeave={onLeave}
-        className="glass relative flex flex-col items-center gap-4 rounded-3xl p-6 transition-[transform,box-shadow,border-color] duration-300 group-hover:border-primary/60 group-active:scale-[0.96] sm:p-7"
+        dir="ltr"
+        className="glass relative flex items-center gap-4 rounded-3xl p-5 text-left transition-[transform,box-shadow,border-color] duration-300 group-hover:border-primary/60 group-active:scale-[0.96] sm:p-6"
         style={{
           transform: "perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))",
           boxShadow: "var(--shadow-card)",
@@ -54,27 +55,26 @@ export function SocialCard({
               "radial-gradient(240px circle at var(--mx,50%) var(--my,50%), color-mix(in oklab, var(--neon) 22%, transparent), transparent 70%)",
           }}
         />
-        <img
-          src={image}
-          alt={`${name} icon`}
-          loading="lazy"
-          className="float-soft h-24 w-24 object-contain drop-shadow-[0_0_25px_color-mix(in_oklab,var(--neon)_45%,transparent)] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 sm:h-28 sm:w-28"
+        <span
+          className="float-soft grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-primary/35 bg-primary/10 text-primary transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
           style={{ animationDelay: `${delayIndex * 0.4}s` }}
-        />
-        <div className="text-center" dir="ltr">
-          <div className="relative h-7 overflow-hidden">
-            <h3 className="font-display text-lg font-bold tracking-wide transition-all duration-300 group-hover:-translate-y-full group-hover:opacity-0">
+        >
+          <Icon
+            className="h-7 w-7 drop-shadow-[0_0_16px_color-mix(in_oklab,var(--neon)_60%,transparent)]"
+            aria-label={`${name} icon`}
+          />
+        </span>
+        <div className="min-w-0">
+          <div className="relative h-6 overflow-hidden">
+            <h3 className="font-display text-base font-bold tracking-wide transition-all duration-300 group-hover:-translate-y-full group-hover:opacity-0">
               {name}
             </h3>
-            <span className="absolute inset-0 flex translate-y-full items-center justify-center font-display text-base font-bold tracking-wide text-primary opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+            <span className="absolute inset-0 flex translate-y-full items-center font-display text-sm font-bold tracking-wide text-primary opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
               {handle}
             </span>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">{handle}</p>
+          <p className="mt-1 truncate text-xs text-muted-foreground">{handle}</p>
         </div>
-        <span className="rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary transition-all duration-300 group-hover:bg-primary/20 group-hover:shadow-[0_0_24px_color-mix(in_oklab,var(--neon)_45%,transparent)]">
-          فتح الرابط ↗
-        </span>
       </div>
     </RippleLink>
   );
