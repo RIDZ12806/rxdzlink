@@ -8,7 +8,7 @@ export default defineConfig({
   server: { host: "::", port: 8080 },
   plugins: [
     tailwindcss(),
-    tanstackStart({ customViteReactPlugin: true }),
+    tanstackStart(),
     viteReact(),
   ],
   resolve: {
