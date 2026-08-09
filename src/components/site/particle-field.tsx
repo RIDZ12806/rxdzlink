@@ -56,9 +56,9 @@ export function ParticleField() {
 
       for (let i = 0; i < dots.length; i++) {
         for (let j = i + 1; j < dots.length; j++) {
-          const a = dots[i];
-          const b = dots[j];
-          const dist = Math.hypot(a.x - b.x, a.y - b.y);
+          const a = dots[i]!;
+          const b = dots[j]!;
+
           if (dist < 120) {
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
