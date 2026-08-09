@@ -94,7 +94,7 @@ function Index() {
         {/* HERO */}
         <section className="mx-auto max-w-6xl px-5 pt-12 pb-20 sm:pt-20">
           <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
-            <div className="order-2 lg:order-1">
+            <div className="order-2 flex flex-col items-center text-center lg:order-1">
               <p
                 className="title-in inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary"
                 style={{ animationDelay: "60ms" }}
@@ -104,7 +104,7 @@ function Index() {
               </p>
 
               <h1
-                className="title-in mt-5 font-display text-5xl leading-[1.1] font-black tracking-tight sm:text-6xl lg:text-7xl"
+                className="title-in mt-5 text-center font-display text-5xl leading-[1.1] font-black tracking-tight sm:text-6xl lg:text-7xl"
                 style={{ animationDelay: "160ms" }}
               >
                 <span className="gradient-text">RXDZ</span>
@@ -120,9 +120,10 @@ function Index() {
               </p>
 
               <div
-                className="title-in mt-8 flex flex-wrap items-center gap-4"
+                className="title-in mt-8 flex flex-wrap items-center justify-center gap-4"
                 style={{ animationDelay: "360ms" }}
               >
+
                 <RippleLink
                   href={GAME_URL}
                   className="pulse-neon group inline-flex items-center gap-3 rounded-2xl px-8 py-4 font-display text-lg font-black text-primary-foreground transition-transform duration-300 hover:scale-[1.04] active:scale-95"
