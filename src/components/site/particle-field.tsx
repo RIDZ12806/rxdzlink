@@ -58,6 +58,8 @@ export function ParticleField() {
         for (let j = i + 1; j < dots.length; j++) {
           const a = dots[i]!;
           const b = dots[j]!;
+          const dist = Math.hypot(a.x - b.x, a.y - b.y);
+
 
           if (dist < 120) {
             ctx.beginPath();
