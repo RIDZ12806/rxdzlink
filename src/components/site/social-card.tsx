@@ -41,7 +41,7 @@ export function SocialCard({
         ref={cardRef}
         onMouseMove={onMove}
         onMouseLeave={onLeave}
-        className="glass relative flex flex-col items-center gap-4 rounded-3xl p-6 transition-[transform,box-shadow,border-color] duration-300 group-hover:border-primary/60 sm:p-7"
+        className="glass relative flex flex-col items-center gap-4 rounded-3xl p-6 transition-[transform,box-shadow,border-color] duration-300 group-hover:border-primary/60 group-active:scale-[0.96] sm:p-7"
         style={{
           transform: "perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))",
           boxShadow: "var(--shadow-card)",
@@ -61,11 +61,16 @@ export function SocialCard({
           className="float-soft h-24 w-24 object-contain drop-shadow-[0_0_25px_color-mix(in_oklab,var(--neon)_45%,transparent)] transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 sm:h-28 sm:w-28"
           style={{ animationDelay: `${delayIndex * 0.4}s` }}
         />
-        <div className="text-center">
-          <h3 className="font-display text-lg font-bold tracking-wide">{name}</h3>
-          <p className="mt-1 text-sm text-muted-foreground" dir="ltr">
-            {handle}
-          </p>
+        <div className="text-center" dir="ltr">
+          <div className="relative h-7 overflow-hidden">
+            <h3 className="font-display text-lg font-bold tracking-wide transition-all duration-300 group-hover:-translate-y-full group-hover:opacity-0">
+              {name}
+            </h3>
+            <span className="absolute inset-0 flex translate-y-full items-center justify-center font-display text-base font-bold tracking-wide text-primary opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              {handle}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{handle}</p>
         </div>
         <span className="rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary transition-all duration-300 group-hover:bg-primary/20 group-hover:shadow-[0_0_24px_color-mix(in_oklab,var(--neon)_45%,transparent)]">
           فتح الرابط ↗
