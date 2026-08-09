@@ -1,19 +1,22 @@
-// @lovable.dev/vite-tanstack-config already includes the required plugins.
-
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
-  tanstackStart: {
-    server: {
-      entry: "server",
+  plugins: [react()],
+  base: '/rxdzlink/',
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
     },
-
-    prerender: {
-      enabled: true,
-      autoSubfolderIndex: true,
-      autoStaticPathsDiscovery: true,
-      crawlLinks: true,
-      failOnError: true,
+  },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
     },
   },
 });
