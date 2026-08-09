@@ -1,14 +1,16 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import viteReact from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig({
-  plugins: [react()],
-  base: '/rxdzlink/',
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-  },
+  server: { host: "::", port: 8080 },
+  plugins: [
+    tailwindcss(),
+    tanstackStart(),
+    viteReact(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
