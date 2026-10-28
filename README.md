@@ -2,12 +2,17 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
-v9: NEW Toolbox tool (separate tab, same dark interface as the Name Maker).
-- Search, categories (Model / Obstacle / SummitKit / Sky), favorites, thumbnails.
-- Insert in front of your camera (sits on the ground), Sky apply, undo, clear.
-- Add your own items by asset id (a full link also works), remove / restore items.
-- Options: anchor on insert, remove scripts. Everything is saved in DZHUP_NameMaker.json.
-- To add another tool later: add a title to TAB_TITLES, a page to the pages table, and a build block.
+v10: NEW REAL Toolbox (replaces the old fixed list). Same window, same RX icon, separate system.
+- Pulls items live from the Roblox Creator Store, classified like the real store:
+  Models / Decals / Meshes / Audio / Animations / Plugins + Favorites + My IDs.
+- Search the whole store, sort (Relevance / Most used / Favorited / Newest / Top rated), Load more.
+- Big thumbnail cards, bold names, creator, asset id, type tag, Insert / Add / Apply / Copy ID.
+- Insert in front of your camera (sits on the ground), Undo, Clear, Anchor and Remove-scripts options.
+- My IDs keeps your old 34 items and lets you add your own by asset id (a full link also works).
+- The Toolbox has its own saved data (settings.toolboxV2), separate from the Name Maker.
+- Interface font is now bold (GothamBold / GothamBlack) so everything is clear.
+
+v9: Toolbox tab (old fixed list, replaced by v10).
 
 v8.1: no more failed rbxassetid sound error; optional local sound file.
 v8: click sound forced (downloaded once, played from a local file), World tab with
@@ -337,7 +342,7 @@ end
 local function textLabel(parent, text, props)
 	props.BackgroundTransparency = 1
 	props.Text = text
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.GothamBold
 	props.TextColor3 = props.TextColor3 or THEME.text
 	props.TextSize = props.TextSize or 13
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
@@ -714,7 +719,7 @@ end -- BLOCK badge
 textLabel(header, "DZ HUP  Studio Tools", {
 	Position = UDim2.fromOffset(58, 10),
 	Size = UDim2.new(1, -260, 0, 20),
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.GothamBlack,
 	TextSize = 15,
 })
 textLabel(header, "Name Maker  |  Toolbox  |  World", {
@@ -844,7 +849,7 @@ for i, title in ipairs(TAB_TITLES) do
 		BackgroundTransparency = 1,
 		AutoButtonColor = false,
 		Text = title,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.GothamBlack,
 		TextSize = 12,
 		TextColor3 = THEME.text,
 		ZIndex = 3,
@@ -3581,94 +3586,243 @@ render()
 end -- BLOCK world
 
 ---------------------------------------------------------------------
--- TOOLBOX page  (a separate tool: own state, own saved data, same dark interface)
--- Built inside its own function so it never touches the main local-variable limit.
--- If anything fails here, the other tools keep working and the reason is printed.
+-- TOOLBOX page  (v10: a separate real store tool; the block comes right below)
 ---------------------------------------------------------------------
 do -- BLOCK toolbox
 local builtOk, builtError = pcall(function()
 	local page = pages[5]
-
+	local BASE = "https://apis.roblox.com/toolbox-service/v1/"
 	local TB_FOLDER_NAME = "DZHUP_Toolbox"
-	local ADD_CATEGORIES = { "Model", "Obstacle", "SummitKit", "Sky" }
-	local FILTERS = {
-		{ key = "All", title = "All", w = 44 },
-		{ key = "Favorites", title = "Favorites", w = 74 },
-		{ key = "Model", title = "Model", w = 58 },
-		{ key = "Obstacle", title = "Obstacle", w = 66 },
-		{ key = "SummitKit", title = "SummitKit", w = 74 },
-		{ key = "Sky", title = "Sky", w = 44 },
-	}
-	-- 21 = Badge, 9 = Place, 3 = Audio: these cannot be inserted as objects
-	local BLOCKED_TYPES = { [21] = true, [9] = true, [3] = true }
 
+	local CATS = {
+		{ key = "Models", title = "Models", typeId = 10 },
+		{ key = "Decals", title = "Decals", typeId = 13 },
+		{ key = "Meshes", title = "Meshes", typeId = 4 },
+		{ key = "Audio", title = "Audio", typeId = 3 },
+		{ key = "Animations", title = "Animations", typeId = 24 },
+		{ key = "Plugins", title = "Plugins", typeId = 38 },
+		{ key = "Favorites", title = "Favorites" },
+		{ key = "MyIds", title = "My IDs" },
+	}
+	local SORTS = {
+		{ "Relevance", 1 },
+		{ "Most used", 2 },
+		{ "Favorited", 3 },
+		{ "Newest", 4 },
+		{ "Top rated", 5 },
+	}
+	local ADD_TYPES = {
+		{ "Model", 10 },
+		{ "Decal", 13 },
+		{ "Mesh", 4 },
+		{ "Audio", 3 },
+		{ "Animation", 24 },
+		{ "Sky", "sky" },
+	}
+	local TYPE_NAMES = { [10] = "Model", [13] = "Decal", [4] = "Mesh", [3] = "Audio", [24] = "Animation", [38] = "Plugin", sky = "Sky" }
+
+	-- the list you had before: it now lives in "My IDs"
 	local DEFAULTS = {
-		{ id = "4926139544", name = "Part Trampoline", category = "Model" },
-		{ id = "11324928349", name = "Lamp", category = "Model" },
-		{ id = "120813293048698", name = "Podium", category = "Model" },
-		{ id = "94304441802173", name = "Village Low Poly", category = "Model" },
-		{ id = "131232802624216", name = "Text", category = "Model" },
-		{ id = "5526968660", name = "Pilar Bunga", category = "Model" },
-		{ id = "574502744", name = "Jembatan", category = "Model" },
-		{ id = "136224194594300", name = "Part Bulet Biru", category = "Model" },
-		{ id = "91824881894906", name = "Pilar Biru", category = "Model" },
-		{ id = "18385401040", name = "Jamur 1", category = "Model" },
-		{ id = "5465044187", name = "Jamur 2", category = "Model" },
-		{ id = "5465008653", name = "Jamur 3", category = "Model" },
-		{ id = "14405338498", name = "Pohon Biru", category = "Model" },
-		{ id = "101093196873917", name = "Pilar Putih", category = "Model" },
-		{ id = "13717277279", name = "Pagar", category = "Model" },
-		{ id = "108969178728061", name = "Coil Mount Luna", category = "Model" },
-		{ id = "71816321170147", name = "Fitur P Balap", category = "Model" },
-		{ id = "94599287071471", name = "Ayunan Pink", category = "Model" },
-		{ id = "99774552211130", name = "Lampion", category = "Model" },
-		{ id = "103932300220382", name = "Efek Angin", category = "Model" },
-		{ id = "130556119417198", name = "Efek Hujan", category = "Model" },
-		{ id = "107568096083006", name = "Pulau Terapung", category = "Model" },
-		{ id = "78758196076694", name = "Kerambit Coil", category = "Model" },
-		{ id = "16491763998", name = "Text 3D", category = "Model" },
-		{ id = "5539708469", name = "Pohon Hijau", category = "Model" },
-		{ id = "4987585723", name = "Pagar Kayu", category = "Model" },
-		{ id = "83282010441336", name = "Pohon Estetik", category = "Model" },
-		{ id = "10936331751", name = "Kursi Raja", category = "Model" },
-		{ id = "117717806718562", name = "Pohon Ungu", category = "Model" },
-		{ id = "16444908253", name = "Waterfall", category = "Model" },
-		{ id = "18849541324", name = "Logo Mount Neon", category = "Model" },
-		{ id = "77237492468310", name = "Rintangan Nexora Full", category = "Obstacle" },
-		{ id = "104719917463159", name = "Tangga Mesh", category = "Obstacle" },
-		{ id = "134505370549170", name = "Rintangan Donat", category = "Obstacle" },
+		"4926139544|Part Trampoline", "11324928349|Lamp", "120813293048698|Podium",
+		"94304441802173|Village Low Poly", "131232802624216|Text", "5526968660|Pilar Bunga",
+		"574502744|Jembatan", "136224194594300|Part Bulet Biru", "91824881894906|Pilar Biru",
+		"18385401040|Jamur 1", "5465044187|Jamur 2", "5465008653|Jamur 3", "14405338498|Pohon Biru",
+		"101093196873917|Pilar Putih", "13717277279|Pagar", "108969178728061|Coil Mount Luna",
+		"71816321170147|Fitur P Balap", "94599287071471|Ayunan Pink", "99774552211130|Lampion",
+		"103932300220382|Efek Angin", "130556119417198|Efek Hujan", "107568096083006|Pulau Terapung",
+		"78758196076694|Kerambit Coil", "16491763998|Text 3D", "5539708469|Pohon Hijau",
+		"4987585723|Pagar Kayu", "83282010441336|Pohon Estetik", "10936331751|Kursi Raja",
+		"117717806718562|Pohon Ungu", "16444908253|Waterfall", "18849541324|Logo Mount Neon",
+		"77237492468310|Rintangan Nexora Full", "104719917463159|Tangga Mesh", "134505370549170|Rintangan Donat",
 	}
 
-	-- saved data (inside DZHUP_NameMaker.json, shared by every project)
-	local state = save.settings.toolbox
-	if type(state) ~= "table" then
-		state = {}
-		save.settings.toolbox = state
+	---------------------------------------------------------------
+	-- saved data (separate from the Name Maker)
+	---------------------------------------------------------------
+	local st = save.settings.toolboxV2
+	if type(st) ~= "table" then
+		st = {}
+		save.settings.toolboxV2 = st
 	end
-	if type(state.custom) ~= "table" then
-		state.custom = {}
+	if type(st.fav) ~= "table" then
+		st.fav = {}
 	end
-	if type(state.deleted) ~= "table" then
-		state.deleted = {}
+	if type(st.opts) ~= "table" then
+		st.opts = {}
 	end
-	if type(state.fav) ~= "table" then
-		state.fav = {}
+	if type(st.mine) ~= "table" then
+		st.mine = {}
+		for _, line in ipairs(DEFAULTS) do
+			local id, name = string.match(line, "^(%d+)|(.+)$")
+			if id then
+				table.insert(st.mine, { id = id, name = name, typeId = 10, creator = "My IDs" })
+			end
+		end
+		local old = save.settings.toolbox
+		if type(old) == "table" and type(old.custom) == "table" then
+			for _, entry in ipairs(old.custom) do
+				local isSky = entry.category == "Sky"
+				table.insert(st.mine, {
+					id = tostring(entry.id),
+					name = tostring(entry.name),
+					typeId = isSky and "sky" or 10,
+					creator = "My IDs",
+				})
+			end
+		end
+		persist()
 	end
-	if type(state.opts) ~= "table" then
-		state.opts = {}
-	end
-	local opts = state.opts
+	local opts = st.opts
 
+	---------------------------------------------------------------
+	-- state
+	---------------------------------------------------------------
+	local catIndex = 1
+	local sortIndex = 1
+	local keyword = ""
+	local items, cursor = {}, nil
+	local loading, loadError = false, nil
+	local requestToken = 0
+	local loadedOnce = false
 	local history = {}
-	local filterKey = "All"
-	local searchText = ""
-	local addCategoryIndex = 1
 	local folderRef = nil
-	local render = nil
+	local addTypeIndex = 1
+	local render, refresh
 
-	-----------------------------------------------------------------
-	-- world helpers
-	-----------------------------------------------------------------
+	---------------------------------------------------------------
+	-- network
+	---------------------------------------------------------------
+	local function httpGet(url)
+		local lastError = "no http function"
+		local req = genv.request or genv.http_request or (type(genv.syn) == "table" and genv.syn.request) or nil
+		if type(req) == "function" then
+			local ok, response = pcall(req, { Url = url, Method = "GET", Headers = { Accept = "application/json" } })
+			if ok and type(response) == "table" and type(response.Body) == "string" and #response.Body > 0 then
+				if response.StatusCode == nil or response.StatusCode == 200 then
+					return response.Body
+				end
+				lastError = "HTTP " .. tostring(response.StatusCode)
+			else
+				lastError = tostring(response)
+			end
+		end
+		local ok, body = pcall(function()
+			return game:HttpGet(url)
+		end)
+		if ok and type(body) == "string" and #body > 0 then
+			return body
+		end
+		local ok2, body2 = pcall(function()
+			return HttpService:GetAsync(url)
+		end)
+		if ok2 and type(body2) == "string" and #body2 > 0 then
+			return body2
+		end
+		return nil, lastError
+	end
+
+	local function getJson(url)
+		local body, err = httpGet(url)
+		if not body then
+			return nil, err
+		end
+		local ok, decoded = pcall(function()
+			return HttpService:JSONDecode(body)
+		end)
+		if ok and type(decoded) == "table" then
+			return decoded
+		end
+		return nil, "bad response"
+	end
+
+	local function fetchStore(cat, token)
+		local url = BASE .. "marketplace/" .. cat.typeId .. "?limit=30&pageNumber=0&sortType=" .. SORTS[sortIndex][2]
+		if keyword ~= "" then
+			url = url .. "&keyword=" .. HttpService:UrlEncode(keyword)
+		end
+		if cursor and cursor ~= "" then
+			url = url .. "&cursor=" .. HttpService:UrlEncode(cursor)
+		end
+		local data, err = getJson(url)
+		if token ~= requestToken then
+			return
+		end
+		if not data then
+			loading = false
+			loadError = "Could not reach the store (" .. tostring(err) .. ")"
+			render()
+			return
+		end
+		local ids = {}
+		for _, entry in ipairs(data.data or {}) do
+			local id = type(entry) == "table" and entry.id or entry
+			if tonumber(id) then
+				table.insert(ids, tostring(math.floor(tonumber(id))))
+			end
+		end
+		cursor = data.nextPageCursor
+		local details = {}
+		if #ids > 0 then
+			local info = getJson(BASE .. "items/details?assetIds=" .. table.concat(ids, ","))
+			if info then
+				for _, entry in ipairs(info.data or {}) do
+					local asset = entry.asset or entry
+					if asset.id then
+						details[tostring(math.floor(tonumber(asset.id) or 0))] = {
+							name = asset.name,
+							creator = entry.creator and entry.creator.name or nil,
+						}
+					end
+				end
+			end
+		end
+		if token ~= requestToken then
+			return
+		end
+		for _, id in ipairs(ids) do
+			local d = details[id] or {}
+			table.insert(items, {
+				id = id,
+				name = tostring(d.name or ("Asset " .. id)),
+				typeId = cat.typeId,
+				creator = d.creator or "",
+			})
+		end
+		loading = false
+		if #ids == 0 then
+			cursor = nil
+		end
+		render()
+	end
+
+	refresh = function(reset)
+		local cat = CATS[catIndex]
+		if not cat.typeId then
+			render()
+			return
+		end
+		requestToken += 1
+		local token = requestToken
+		if reset then
+			items = {}
+			cursor = nil
+		end
+		loading = true
+		loadError = nil
+		render()
+		task.spawn(function()
+			local ok, err = pcall(fetchStore, cat, token)
+			if not ok and token == requestToken then
+				loading = false
+				loadError = tostring(err)
+				render()
+			end
+		end)
+	end
+
+	---------------------------------------------------------------
+	-- inserting
+	---------------------------------------------------------------
 	local function toolboxFolder()
 		Workspace = game:GetService("Workspace")
 		local alive = false
@@ -3688,12 +3842,10 @@ local builtOk, builtError = pcall(function()
 		return folder
 	end
 
-	-- the point on the ground in front of the camera
 	local function spawnPoint()
 		local position, _, forward = viewBasis()
 		local anchor = findSpawnPosition()
 		local target = position + forward * CONFIG.ToolboxPlaceDistance
-		local startY = math.max(position.Y, anchor.Y) + 60
 		local hit = nil
 		pcall(function()
 			local params = RaycastParams.new()
@@ -3703,6 +3855,7 @@ local builtOk, builtError = pcall(function()
 				table.insert(ignore, player.Character)
 			end
 			params.FilterDescendantsInstances = ignore
+			local startY = math.max(position.Y, anchor.Y) + 60
 			hit = Workspace:Raycast(Vector3.new(target.X, startY, target.Z), Vector3.new(0, -800, 0), params)
 		end)
 		if hit then
@@ -3733,14 +3886,35 @@ local builtOk, builtError = pcall(function()
 		return nil
 	end
 
+	local function placeRoot(root)
+		local point = spawnPoint()
+		pcall(function()
+			if root:IsA("Model") then
+				local boxCFrame, size = root:GetBoundingBox()
+				local pivot = root:GetPivot()
+				local offset = pivot.Position - boxCFrame.Position
+				root:PivotTo(CFrame.new(point + Vector3.new(0, size.Y / 2, 0) + offset) * pivot.Rotation)
+			else
+				root.CFrame = CFrame.new(point + Vector3.new(0, root.Size.Y / 2, 0)) * root.CFrame.Rotation
+			end
+		end)
+		root.Parent = toolboxFolder()
+		pcall(function()
+			game:GetService("Selection"):Set({ root })
+		end)
+		table.insert(history, root)
+	end
+
 	-- returns ok, message
 	local function insertItem(item)
 		local assetId = tonumber(string.match(tostring(item.id), "%d+"))
 		if not assetId then
 			return false, "Invalid asset id"
 		end
+		local t = item.typeId
+		local texture = "rbxassetid://" .. tostring(assetId)
 
-		if item.category == "Sky" then
+		if t == "sky" then
 			local ok = pcall(function()
 				local lighting = game:GetService("Lighting")
 				for _, child in ipairs(lighting:GetChildren()) do
@@ -3750,35 +3924,90 @@ local builtOk, builtError = pcall(function()
 				end
 				local sky = Instance.new("Sky")
 				sky.Name = "DZHUP_Sky"
-				local texture = "rbxassetid://" .. tostring(assetId)
-				sky.SkyboxBk = texture
-				sky.SkyboxDn = texture
-				sky.SkyboxFt = texture
-				sky.SkyboxLf = texture
-				sky.SkyboxRt = texture
-				sky.SkyboxUp = texture
+				sky.SkyboxBk, sky.SkyboxDn, sky.SkyboxFt = texture, texture, texture
+				sky.SkyboxLf, sky.SkyboxRt, sky.SkyboxUp = texture, texture, texture
 				sky.Parent = lighting
 			end)
-			if ok then
-				return true, "Sky applied: " .. item.name
-			end
-			return false, "Could not apply the sky"
+			return ok, ok and ("Sky applied: " .. item.name) or "Could not apply the sky"
 		end
 
-		local typeId = 0
-		pcall(function()
-			local info = game:GetService("MarketplaceService"):GetProductInfo(assetId, Enum.InfoType.Asset)
-			typeId = info and info.AssetTypeId or 0
-		end)
-		if BLOCKED_TYPES[typeId] then
-			return false, "This asset type cannot be inserted"
+		if t == 38 then
+			copyText(tostring(assetId))
+			return true, "Plugin ID copied (install it from the Creator Store)"
+		end
+
+		if t == 24 then
+			local animation = Instance.new("Animation")
+			animation.Name = item.name
+			animation.AnimationId = texture
+			animation.Parent = toolboxFolder()
+			table.insert(history, animation)
+			return true, "Animation added: " .. item.name
+		end
+
+		if t == 3 then
+			local sound = Instance.new("Sound")
+			sound.Name = item.name
+			sound.SoundId = texture
+			sound.Parent = toolboxFolder()
+			table.insert(history, sound)
+			return true, "Audio added: " .. item.name
+		end
+
+		if t == 13 then
+			local part = Instance.new("Part")
+			part.Name = item.name
+			part.Size = Vector3.new(6, 6, 0.4)
+			part.Anchored = true
+			part.Material = Enum.Material.SmoothPlastic
+			part.Color = Color3.new(1, 1, 1)
+			local decal = nil
+			local objects = loadAsset(assetId)
+			if objects then
+				for _, object in ipairs(objects) do
+					if object:IsA("Decal") then
+						decal = object
+						break
+					end
+				end
+			end
+			if not decal then
+				decal = Instance.new("Decal")
+				decal.Texture = texture
+			end
+			decal.Face = Enum.NormalId.Front
+			decal.Parent = part
+			placeRoot(part)
+			return true, "Decal inserted: " .. item.name
+		end
+
+		if t == 4 then
+			local mesh = nil
+			pcall(function()
+				mesh = game:GetService("InsertService"):CreateMeshPartAsync(
+					texture,
+					Enum.CollisionFidelity.Box,
+					Enum.RenderFidelity.Automatic
+				)
+			end)
+			if not mesh then
+				mesh = Instance.new("Part")
+				mesh.Size = Vector3.new(4, 4, 4)
+				local special = Instance.new("SpecialMesh")
+				special.MeshType = Enum.MeshType.FileMesh
+				special.MeshId = texture
+				special.Parent = mesh
+			end
+			mesh.Name = item.name
+			mesh.Anchored = true
+			placeRoot(mesh)
+			return true, "Mesh inserted: " .. item.name
 		end
 
 		local objects = loadAsset(assetId)
 		if not objects then
 			return false, "Could not load asset " .. tostring(assetId)
 		end
-
 		local root = nil
 		if #objects == 1 and (objects[1]:IsA("Model") or objects[1]:IsA("BasePart")) then
 			root = objects[1]
@@ -3801,7 +4030,6 @@ local builtOk, builtError = pcall(function()
 				end
 			end
 		end
-
 		if opts.anchor == true then
 			if root:IsA("BasePart") then
 				root.Anchored = true
@@ -3812,24 +4040,7 @@ local builtOk, builtError = pcall(function()
 				end
 			end
 		end
-
-		local point = spawnPoint()
-		pcall(function()
-			if root:IsA("Model") then
-				local boxCFrame, size = root:GetBoundingBox()
-				local pivot = root:GetPivot()
-				local offset = pivot.Position - boxCFrame.Position
-				root:PivotTo(CFrame.new(point + Vector3.new(0, size.Y / 2, 0) + offset) * pivot.Rotation)
-			else
-				root.CFrame = CFrame.new(point + Vector3.new(0, root.Size.Y / 2, 0)) * root.CFrame.Rotation
-			end
-		end)
-
-		root.Parent = toolboxFolder()
-		pcall(function()
-			game:GetService("Selection"):Set({ root })
-		end)
-		table.insert(history, root)
+		placeRoot(root)
 
 		local message = "Inserted: " .. item.name
 		if scriptCount > 0 then
@@ -3842,69 +4053,9 @@ local builtOk, builtError = pcall(function()
 		return true, message
 	end
 
-	-----------------------------------------------------------------
-	-- items
-	-----------------------------------------------------------------
-	local function visibleItems()
-		local list = {}
-		local query = string.lower(trim(searchText))
-		local order = 0
-		local function consider(item)
-			order += 1
-			item.order = order
-			if filterKey == "Favorites" then
-				if state.fav[item.id] ~= true then
-					return
-				end
-			elseif filterKey ~= "All" and item.category ~= filterKey then
-				return
-			end
-			if query ~= "" and not string.find(string.lower(item.name), query, 1, true) and not string.find(item.id, query, 1, true) then
-				return
-			end
-			table.insert(list, item)
-		end
-		for _, entry in ipairs(DEFAULTS) do
-			if state.deleted[entry.id] ~= true then
-				consider({ name = entry.name, id = entry.id, category = entry.category, default = true })
-			end
-		end
-		for _, entry in ipairs(state.custom) do
-			consider({
-				name = tostring(entry.name),
-				id = tostring(entry.id),
-				category = entry.category or "Model",
-				ref = entry,
-			})
-		end
-		table.sort(list, function(a, b)
-			local fa = state.fav[a.id] == true
-			local fb = state.fav[b.id] == true
-			if fa ~= fb then
-				return fa
-			end
-			return a.order < b.order
-		end)
-		return list
-	end
-
-	local function idExists(id)
-		for _, entry in ipairs(DEFAULTS) do
-			if entry.id == id and state.deleted[id] ~= true then
-				return true
-			end
-		end
-		for _, entry in ipairs(state.custom) do
-			if tostring(entry.id) == id then
-				return true
-			end
-		end
-		return false
-	end
-
-	-----------------------------------------------------------------
-	-- UI helpers of this tool
-	-----------------------------------------------------------------
+	---------------------------------------------------------------
+	-- UI: top bar
+	---------------------------------------------------------------
 	local function field(parent, x, y, w, h, placeholder)
 		local box = new("TextBox", {
 			Position = UDim2.fromOffset(x, y),
@@ -3916,8 +4067,8 @@ local builtOk, builtError = pcall(function()
 			PlaceholderColor3 = THEME.muted,
 			Text = "",
 			TextColor3 = THEME.text,
-			TextSize = 12,
-			Font = Enum.Font.GothamMedium,
+			TextSize = 13,
+			Font = Enum.Font.GothamBold,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextTruncate = Enum.TextTruncate.AtEnd,
 		}, parent)
@@ -3933,149 +4084,199 @@ local builtOk, builtError = pcall(function()
 		return box
 	end
 
-	-----------------------------------------------------------------
-	-- left card: search + categories + list
-	-----------------------------------------------------------------
-	local leftCard = new("Frame", {
-		Size = UDim2.fromOffset(350, 356),
-		BackgroundColor3 = THEME.surface,
-		BorderSizePixel = 0,
-	}, page)
-	corner(leftCard, 12)
-	stroke(leftCard, THEME.line, 0.5, 1)
-
-	local searchBox = field(leftCard, 12, 12, 326, 32, "Search name or ID...")
+	local searchBox = field(page, 0, 0, 196, 34, "Search the store...")
+	local stamp = 0
 	searchBox:GetPropertyChangedSignal("Text"):Connect(function()
-		searchText = searchBox.Text
-		if render then
-			render()
-		end
+		stamp += 1
+		local mine = stamp
+		task.delay(0.6, function()
+			if mine ~= stamp then
+				return
+			end
+			keyword = trim(searchBox.Text)
+			if CATS[catIndex].typeId then
+				refresh(true)
+			else
+				render()
+			end
+		end)
 	end)
 
+	local sortButton = makeButton(page, {
+		Text = SORTS[sortIndex][1],
+		Position = UDim2.fromOffset(202, 0),
+		Size = UDim2.fromOffset(92, 34),
+		TextSize = 12,
+	}, { fill = THEME.surface2, radius = 9 })
+	sortButton.Activated:Connect(function()
+		sortIndex = sortIndex % #SORTS + 1
+		sortButton.Text = SORTS[sortIndex][1]
+		refresh(true)
+	end)
+
+	local function toggleButton(x, w, label, key, onText, offText)
+		local button = makeButton(page, {
+			Text = "",
+			Position = UDim2.fromOffset(x, 0),
+			Size = UDim2.fromOffset(w, 34),
+			TextSize = 11,
+		}, { fill = THEME.surface2, radius = 9 })
+		local function paint()
+			local isOn = opts[key] == true
+			button.Text = label .. ": " .. (isOn and onText or offText)
+			button.TextColor3 = isOn and THEME.success or THEME.text
+		end
+		button.Activated:Connect(function()
+			opts[key] = not (opts[key] == true)
+			paint()
+			persist()
+		end)
+		paint()
+	end
+	toggleButton(300, 82, "Anchor", "anchor", "ON", "OFF")
+	toggleButton(388, 82, "Scripts", "stripScripts", "OUT", "KEEP")
+
+	local undoButton = makeButton(page, {
+		Text = "Undo",
+		Position = UDim2.fromOffset(476, 0),
+		Size = UDim2.fromOffset(54, 34),
+		TextSize = 12,
+		TextColor3 = THEME.accent,
+	}, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 9 })
+	undoButton.Activated:Connect(function()
+		while #history > 0 do
+			local object = table.remove(history)
+			if object and object.Parent then
+				local objectName = object.Name
+				object:Destroy()
+				showToast("Removed: " .. objectName, true)
+				return
+			end
+		end
+		showToast("Nothing to undo", false)
+	end)
+
+	local clearButton = makeButton(page, {
+		Text = "Clear",
+		Position = UDim2.fromOffset(536, 0),
+		Size = UDim2.fromOffset(52, 34),
+		TextSize = 12,
+		TextColor3 = THEME.danger,
+	}, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 9 })
+	local clearArmed = false
+	clearButton.Activated:Connect(function()
+		if not clearArmed then
+			clearArmed = true
+			clearButton.Text = "Sure?"
+			clearButton.TextColor3 = THEME.text
+			tween(clearButton, 0.12, { BackgroundColor3 = THEME.danger })
+			task.delay(2.5, function()
+				if clearArmed and clearButton.Parent then
+					clearArmed = false
+					clearButton.Text = "Clear"
+					clearButton.TextColor3 = THEME.danger
+					tween(clearButton, 0.12, { BackgroundColor3 = THEME.surface })
+				end
+			end)
+			return
+		end
+		clearArmed = false
+		clearButton.Text = "Clear"
+		clearButton.TextColor3 = THEME.danger
+		tween(clearButton, 0.12, { BackgroundColor3 = THEME.surface })
+		local removed = 0
+		for _, child in ipairs(toolboxFolder():GetChildren()) do
+			removed += 1
+			child:Destroy()
+		end
+		table.clear(history)
+		showToast(removed == 0 and "Nothing to clear" or ("Removed " .. removed .. " inserted items"), removed > 0)
+	end)
+
+	---------------------------------------------------------------
+	-- UI: categories
+	---------------------------------------------------------------
 	local chipRow = new("ScrollingFrame", {
-		Position = UDim2.fromOffset(12, 50),
-		Size = UDim2.fromOffset(326, 28),
+		Position = UDim2.fromOffset(0, 40),
+		Size = UDim2.fromOffset(588, 32),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 0,
 		CanvasSize = UDim2.new(),
 		AutomaticCanvasSize = Enum.AutomaticSize.X,
 		ScrollingDirection = Enum.ScrollingDirection.X,
-	}, leftCard)
+	}, page)
 	new("UIListLayout", {
 		FillDirection = Enum.FillDirection.Horizontal,
 		Padding = UDim.new(0, 6),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 	}, chipRow)
 
-	local filterChips = {}
-	local function refreshChips()
-		for _, chip in ipairs(filterChips) do
-			local active = chip.key == filterKey
+	local chips = {}
+	local function paintChips()
+		for i, chip in ipairs(chips) do
+			local active = i == catIndex
 			tween(chip.button, 0.14, { BackgroundColor3 = active and THEME.accent or THEME.surface2 })
 			chip.button.TextColor3 = active and THEME.dark or THEME.text
 			chip.stroke.Transparency = active and 1 or 0.4
 		end
 	end
-	for index, item in ipairs(FILTERS) do
+	for index, cat in ipairs(CATS) do
 		local button = new("TextButton", {
-			Text = item.title,
-			Size = UDim2.fromOffset(item.w, 26),
-			TextSize = 10,
-			Font = Enum.Font.GothamBold,
+			Text = cat.title,
+			Size = UDim2.fromOffset(math.max(64, #cat.title * 9 + 24), 32),
+			TextSize = 12,
+			Font = Enum.Font.GothamBlack,
 			TextColor3 = THEME.text,
 			BackgroundColor3 = THEME.surface2,
 			AutoButtonColor = false,
 			BorderSizePixel = 0,
 			LayoutOrder = index,
 		}, chipRow)
-		corner(button, 8)
-		local chip = { key = item.key, button = button, stroke = stroke(button, THEME.line, 0.4, 1) }
-		table.insert(filterChips, chip)
-		button.MouseEnter:Connect(function()
-			if filterKey ~= chip.key then
-				tween(button, 0.1, { BackgroundColor3 = THEME.line })
-			end
-		end)
-		button.MouseLeave:Connect(function()
-			if filterKey ~= chip.key then
-				tween(button, 0.1, { BackgroundColor3 = THEME.surface2 })
-			end
-		end)
+		corner(button, 9)
+		table.insert(chips, { button = button, stroke = stroke(button, THEME.line, 0.4, 1) })
 		button.Activated:Connect(function()
-			filterKey = chip.key
-			if render then
+			catIndex = index
+			if cat.typeId then
+				refresh(true)
+			else
 				render()
 			end
 		end)
 	end
 
-	local listFrame = new("ScrollingFrame", {
-		Position = UDim2.fromOffset(12, 84),
-		Size = UDim2.fromOffset(326, 260),
-		BackgroundColor3 = THEME.field,
-		BorderSizePixel = 0,
-		ScrollBarThickness = 3,
-		ScrollBarImageColor3 = THEME.muted,
-		CanvasSize = UDim2.new(),
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		ScrollingDirection = Enum.ScrollingDirection.Y,
-	}, leftCard)
-	corner(listFrame, 10)
-	stroke(listFrame, THEME.line, 0.5, 1)
-	new("UIPadding", {
-		PaddingTop = UDim.new(0, 6),
-		PaddingBottom = UDim.new(0, 6),
-		PaddingLeft = UDim.new(0, 6),
-		PaddingRight = UDim.new(0, 8),
-	}, listFrame)
-	new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }, listFrame)
-
-	local emptyLabel = textLabel(leftCard, "", {
-		Position = UDim2.fromOffset(12, 84),
-		Size = UDim2.fromOffset(326, 260),
-		TextSize = 12,
-		TextColor3 = THEME.muted,
-		TextWrapped = true,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Visible = false,
-	})
-
-	-----------------------------------------------------------------
-	-- right card: add item, options, inserted objects
-	-----------------------------------------------------------------
-	local rightCard = new("Frame", {
-		Position = UDim2.fromOffset(362, 0),
-		Size = UDim2.fromOffset(226, 356),
+	---------------------------------------------------------------
+	-- UI: add-by-ID panel (only inside "My IDs")
+	---------------------------------------------------------------
+	local addPanel = new("Frame", {
+		Position = UDim2.fromOffset(0, 78),
+		Size = UDim2.fromOffset(588, 38),
 		BackgroundColor3 = THEME.surface,
 		BorderSizePixel = 0,
+		Visible = false,
 	}, page)
-	corner(rightCard, 12)
-	stroke(rightCard, THEME.line, 0.5, 1)
-
-	sectionTitle(rightCard, "ADD ITEM", 12)
-	local addName = field(rightCard, 16, 32, 194, 32, "Item name...")
-	local addId = field(rightCard, 16, 68, 194, 32, "Asset ID or link...")
-
-	local categoryButton = makeButton(rightCard, {
-		Text = "Type: " .. ADD_CATEGORIES[addCategoryIndex],
-		Position = UDim2.fromOffset(16, 104),
-		Size = UDim2.fromOffset(194, 28),
+	corner(addPanel, 10)
+	stroke(addPanel, THEME.line, 0.5, 1)
+	local addName = field(addPanel, 6, 4, 170, 30, "Item name...")
+	local addId = field(addPanel, 182, 4, 150, 30, "Asset ID or link...")
+	local typeButton = makeButton(addPanel, {
+		Text = "Type: " .. ADD_TYPES[addTypeIndex][1],
+		Position = UDim2.fromOffset(338, 4),
+		Size = UDim2.fromOffset(120, 30),
 		TextSize = 11,
 	}, { fill = THEME.surface2, radius = 8 })
-	categoryButton.Activated:Connect(function()
-		addCategoryIndex = addCategoryIndex % #ADD_CATEGORIES + 1
-		categoryButton.Text = "Type: " .. ADD_CATEGORIES[addCategoryIndex]
+	typeButton.Activated:Connect(function()
+		addTypeIndex = addTypeIndex % #ADD_TYPES + 1
+		typeButton.Text = "Type: " .. ADD_TYPES[addTypeIndex][1]
 	end)
-
-	local addButton = makeButton(rightCard, {
-		Text = "ADD TO TOOLBOX",
-		Position = UDim2.fromOffset(16, 138),
-		Size = UDim2.fromOffset(194, 34),
+	local addButton = makeButton(addPanel, {
+		Text = "ADD",
+		Position = UDim2.fromOffset(464, 4),
+		Size = UDim2.fromOffset(118, 30),
 		TextSize = 12,
 		Font = Enum.Font.GothamBlack,
 		TextColor3 = THEME.dark,
-	}, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 10 })
+	}, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 8 })
 	addButton.Activated:Connect(function()
 		local name = string.sub(trim(addName.Text), 1, 40)
 		local id = string.match(addId.Text, "%d+")
@@ -4087,217 +4288,144 @@ local builtOk, builtError = pcall(function()
 			showToast("Type a valid asset ID", false)
 			return
 		end
-		if idExists(id) then
-			showToast("This ID is already in the toolbox", false)
-			return
+		for _, entry in ipairs(st.mine) do
+			if tostring(entry.id) == id then
+				showToast("This ID is already saved", false)
+				return
+			end
 		end
-		table.insert(state.custom, { name = name, id = id, category = ADD_CATEGORIES[addCategoryIndex] })
+		table.insert(st.mine, { id = id, name = name, typeId = ADD_TYPES[addTypeIndex][2], creator = "My IDs" })
 		persist()
 		addName.Text = ""
 		addId.Text = ""
-		filterKey = "All"
-		searchBox.Text = ""
 		render()
 		showToast("Item added: " .. name, true)
 	end)
 
-	sectionTitle(rightCard, "OPTIONS", 184)
-	local function makeToggle(y, label, key)
-		local row = makeButton(rightCard, {
-			Text = "",
-			Position = UDim2.fromOffset(16, y),
-			Size = UDim2.fromOffset(194, 26),
-		}, { fill = THEME.surface2, radius = 8 })
-		textLabel(row, label, {
-			Position = UDim2.fromOffset(10, 0),
-			Size = UDim2.new(1, -60, 1, 0),
-			TextSize = 11,
-		})
-		local stateLabel = textLabel(row, "", {
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -8, 0.5, 0),
-			Size = UDim2.fromOffset(40, 16),
-			Font = Enum.Font.GothamBold,
-			TextSize = 11,
-			TextXAlignment = Enum.TextXAlignment.Right,
-		})
-		local function paint()
-			local isOn = opts[key] == true
-			stateLabel.Text = isOn and "ON" or "OFF"
-			stateLabel.TextColor3 = isOn and THEME.success or THEME.muted
-		end
-		row.Activated:Connect(function()
-			opts[key] = not (opts[key] == true)
-			paint()
-			persist()
-		end)
-		paint()
-	end
-	makeToggle(204, "Anchor on insert", "anchor")
-	makeToggle(234, "Remove scripts", "stripScripts")
+	---------------------------------------------------------------
+	-- UI: grid of cards
+	---------------------------------------------------------------
+	local grid = new("ScrollingFrame", {
+		Position = UDim2.fromOffset(0, 78),
+		Size = UDim2.fromOffset(588, 278),
+		BackgroundColor3 = THEME.field,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 4,
+		ScrollBarImageColor3 = THEME.muted,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+	}, page)
+	corner(grid, 12)
+	stroke(grid, THEME.line, 0.5, 1)
+	new("UIPadding", {
+		PaddingTop = UDim.new(0, 8),
+		PaddingBottom = UDim.new(0, 8),
+		PaddingLeft = UDim.new(0, 8),
+		PaddingRight = UDim.new(0, 10),
+	}, grid)
+	new("UIGridLayout", {
+		CellSize = UDim2.fromOffset(134, 152),
+		CellPadding = UDim2.fromOffset(8, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	}, grid)
 
-	sectionTitle(rightCard, "INSERTED", 270)
-	local countLabel = textLabel(rightCard, "0", {
-		Position = UDim2.fromOffset(16, 270),
-		Size = UDim2.new(1, -32, 0, 16),
+	local statusLabel = textLabel(page, "", {
+		Position = UDim2.fromOffset(0, 78),
+		Size = UDim2.fromOffset(588, 278),
 		Font = Enum.Font.GothamBold,
-		TextSize = 11,
-		TextColor3 = THEME.accent,
-		TextXAlignment = Enum.TextXAlignment.Right,
-	})
-	local function updateCount()
-		local total = 0
-		pcall(function()
-			total = #toolboxFolder():GetChildren()
-		end)
-		countLabel.Text = tostring(total) .. " in world"
-	end
-
-	local undoButton = makeButton(rightCard, {
-		Text = "Undo last",
-		Position = UDim2.fromOffset(16, 290),
-		Size = UDim2.fromOffset(93, 28),
-		TextSize = 11,
-		TextColor3 = THEME.accent,
-	}, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 8 })
-	undoButton.Activated:Connect(function()
-		while #history > 0 do
-			local object = table.remove(history)
-			if object and object.Parent then
-				local objectName = object.Name
-				object:Destroy()
-				updateCount()
-				showToast("Removed: " .. objectName, true)
-				return
-			end
-		end
-		showToast("Nothing to undo", false)
-	end)
-
-	local clearButton = makeButton(rightCard, {
-		Text = "Clear all",
-		Position = UDim2.fromOffset(117, 290),
-		Size = UDim2.fromOffset(93, 28),
-		TextSize = 11,
-		TextColor3 = THEME.danger,
-	}, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
-	local clearArmed = false
-	clearButton.Activated:Connect(function()
-		if not clearArmed then
-			clearArmed = true
-			clearButton.Text = "Confirm?"
-			clearButton.TextColor3 = THEME.text
-			tween(clearButton, 0.12, { BackgroundColor3 = THEME.danger })
-			task.delay(2.5, function()
-				if clearArmed and clearButton.Parent then
-					clearArmed = false
-					clearButton.Text = "Clear all"
-					clearButton.TextColor3 = THEME.danger
-					tween(clearButton, 0.12, { BackgroundColor3 = THEME.surface })
-				end
-			end)
-			return
-		end
-		clearArmed = false
-		clearButton.Text = "Clear all"
-		clearButton.TextColor3 = THEME.danger
-		tween(clearButton, 0.12, { BackgroundColor3 = THEME.surface })
-		local removed = 0
-		for _, child in ipairs(toolboxFolder():GetChildren()) do
-			removed += 1
-			child:Destroy()
-		end
-		table.clear(history)
-		updateCount()
-		showToast(removed == 0 and "Nothing to clear" or ("Removed " .. removed .. " inserted items"), removed > 0)
-	end)
-
-	local restoreButton = makeButton(rightCard, {
-		Text = "Restore deleted defaults",
-		Position = UDim2.fromOffset(16, 322),
-		Size = UDim2.fromOffset(194, 24),
-		TextSize = 10,
+		TextSize = 14,
 		TextColor3 = THEME.muted,
-	}, { fill = THEME.surface, radius = 8 })
-	restoreButton.Activated:Connect(function()
-		if next(state.deleted) == nil then
-			showToast("No deleted defaults to restore", false)
-			return
-		end
-		table.clear(state.deleted)
-		persist()
-		render()
-		showToast("Default items restored", true)
-	end)
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Visible = false,
+	})
 
-	-----------------------------------------------------------------
-	-- rows
-	-----------------------------------------------------------------
 	local STAR_ON = utf8.char(0x2605)
 	local STAR_OFF = utf8.char(0x2606)
 
-	local function buildRow(item, index)
-		local row = new("Frame", {
-			Size = UDim2.new(1, 0, 0, 54),
+	local function actionLabel(item)
+		if item.typeId == "sky" then
+			return "Apply"
+		elseif item.typeId == 38 then
+			return "Copy ID"
+		elseif item.typeId == 3 or item.typeId == 24 then
+			return "Add"
+		end
+		return "Insert"
+	end
+
+	local function buildCard(item, index, canDelete)
+		local card = new("Frame", {
 			BackgroundColor3 = THEME.surface2,
 			BorderSizePixel = 0,
 			LayoutOrder = index,
-		}, listFrame)
-		corner(row, 10)
-		stroke(row, THEME.line, 0.7, 1)
+		}, grid)
+		corner(card, 10)
+		stroke(card, THEME.line, 0.6, 1)
 
 		local thumb = new("ImageLabel", {
-			Position = UDim2.fromOffset(8, 7),
-			Size = UDim2.fromOffset(40, 40),
+			Position = UDim2.fromOffset(6, 6),
+			Size = UDim2.fromOffset(122, 84),
 			BackgroundColor3 = THEME.field,
 			BorderSizePixel = 0,
 			ScaleType = Enum.ScaleType.Fit,
 			Image = "rbxthumb://type=Asset&id=" .. item.id .. "&w=150&h=150",
-		}, row)
+		}, card)
 		corner(thumb, 8)
 
-		textLabel(row, item.name, {
-			Position = UDim2.fromOffset(56, 8),
-			Size = UDim2.new(1, -192, 0, 18),
-			Font = Enum.Font.GothamBold,
+		local tag = new("Frame", {
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -4, 0, 4),
+			Size = UDim2.fromOffset(#(TYPE_NAMES[item.typeId] or "Item") * 6 + 12, 16),
+			BackgroundColor3 = THEME.header,
+			BackgroundTransparency = 0.15,
+			BorderSizePixel = 0,
+		}, thumb)
+		corner(tag, 6)
+		textLabel(tag, TYPE_NAMES[item.typeId] or "Item", {
+			Size = UDim2.fromScale(1, 1),
+			Font = Enum.Font.GothamBlack,
+			TextSize = 9,
+			TextColor3 = THEME.accent,
+			TextXAlignment = Enum.TextXAlignment.Center,
+		})
+
+		textLabel(card, item.name, {
+			Position = UDim2.fromOffset(8, 94),
+			Size = UDim2.new(1, -16, 0, 16),
+			Font = Enum.Font.GothamBlack,
 			TextSize = 12,
 			TextTruncate = Enum.TextTruncate.AtEnd,
 		})
-		textLabel(row, item.category .. "  |  " .. item.id, {
-			Position = UDim2.fromOffset(56, 28),
-			Size = UDim2.new(1, -192, 0, 14),
-			TextSize = 10,
+		textLabel(card, (item.creator ~= "" and item.creator or "Unknown") .. "  |  " .. item.id, {
+			Position = UDim2.fromOffset(8, 110),
+			Size = UDim2.new(1, -16, 0, 12),
+			Font = Enum.Font.GothamBold,
+			TextSize = 9,
 			TextColor3 = THEME.muted,
 			TextTruncate = Enum.TextTruncate.AtEnd,
 		})
 
-		local insertLabel = item.category == "Sky" and "Apply" or "Insert"
-		local insertButton = makeButton(row, {
-			Text = insertLabel,
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -8, 0.5, 0),
-			Size = UDim2.fromOffset(56, 30),
+		local insertWidth = canDelete and 70 or 94
+		local label = actionLabel(item)
+		local insertButton = makeButton(card, {
+			Text = label,
+			Position = UDim2.fromOffset(6, 124),
+			Size = UDim2.fromOffset(insertWidth, 24),
 			TextSize = 11,
+			Font = Enum.Font.GothamBlack,
 			TextColor3 = THEME.dark,
 		}, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 8 })
 
-		local favButton = makeButton(row, {
-			Text = state.fav[item.id] == true and STAR_ON or STAR_OFF,
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -68, 0.5, 0),
-			Size = UDim2.fromOffset(28, 30),
+		local isFav = st.fav[item.id] ~= nil
+		local favButton = makeButton(card, {
+			Text = isFav and STAR_ON or STAR_OFF,
+			Position = UDim2.fromOffset(6 + insertWidth + 4, 124),
+			Size = UDim2.fromOffset(24, 24),
 			TextSize = 14,
-			TextColor3 = state.fav[item.id] == true and THEME.accent or THEME.muted,
+			TextColor3 = isFav and THEME.accent or THEME.muted,
 		}, { fill = THEME.surface, radius = 8 })
-
-		local deleteButton = makeButton(row, {
-			Text = "X",
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -100, 0.5, 0),
-			Size = UDim2.fromOffset(28, 30),
-			TextSize = 11,
-			TextColor3 = THEME.danger,
-		}, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
 
 		local working = false
 		insertButton.Activated:Connect(function()
@@ -4313,92 +4441,163 @@ local builtOk, builtError = pcall(function()
 					success = false
 				end
 				showToast(tostring(message), success)
-				updateCount()
 				if insertButton.Parent then
 					insertButton.Text = success and "Done" or "Failed"
 					task.wait(1.2)
 				end
 				if insertButton.Parent then
-					insertButton.Text = insertLabel
+					insertButton.Text = label
 				end
 				working = false
 			end)
 		end)
 
 		favButton.Activated:Connect(function()
-			if state.fav[item.id] == true then
-				state.fav[item.id] = nil
+			if st.fav[item.id] ~= nil then
+				st.fav[item.id] = nil
 			else
-				state.fav[item.id] = true
+				st.fav[item.id] = { id = item.id, name = item.name, typeId = item.typeId, creator = item.creator }
 			end
 			persist()
-			if filterKey == "Favorites" then
+			if CATS[catIndex].key == "Favorites" then
 				render()
 				return
 			end
-			local isFav = state.fav[item.id] == true
-			favButton.Text = isFav and STAR_ON or STAR_OFF
-			favButton.TextColor3 = isFav and THEME.accent or THEME.muted
+			local now = st.fav[item.id] ~= nil
+			favButton.Text = now and STAR_ON or STAR_OFF
+			favButton.TextColor3 = now and THEME.accent or THEME.muted
 		end)
 
-		local armed = false
-		deleteButton.Activated:Connect(function()
-			if not armed then
-				armed = true
-				deleteButton.Text = "?"
-				deleteButton.TextColor3 = THEME.text
-				tween(deleteButton, 0.12, { BackgroundColor3 = THEME.danger })
-				task.delay(2.5, function()
-					if armed and deleteButton.Parent then
-						armed = false
-						deleteButton.Text = "X"
-						deleteButton.TextColor3 = THEME.danger
-						tween(deleteButton, 0.12, { BackgroundColor3 = THEME.surface })
-					end
-				end)
-				return
-			end
-			if item.default then
-				state.deleted[item.id] = true
-			else
-				for i, entry in ipairs(state.custom) do
-					if entry == item.ref then
-						table.remove(state.custom, i)
+		if canDelete then
+			local deleteButton = makeButton(card, {
+				Text = "X",
+				Position = UDim2.fromOffset(6 + insertWidth + 4 + 28, 124),
+				Size = UDim2.fromOffset(24, 24),
+				TextSize = 11,
+				TextColor3 = THEME.danger,
+			}, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
+			local armed = false
+			deleteButton.Activated:Connect(function()
+				if not armed then
+					armed = true
+					deleteButton.Text = "?"
+					tween(deleteButton, 0.12, { BackgroundColor3 = THEME.danger })
+					task.delay(2.5, function()
+						if armed and deleteButton.Parent then
+							armed = false
+							deleteButton.Text = "X"
+							tween(deleteButton, 0.12, { BackgroundColor3 = THEME.surface })
+						end
+					end)
+					return
+				end
+				for i, entry in ipairs(st.mine) do
+					if tostring(entry.id) == item.id then
+						table.remove(st.mine, i)
 						break
 					end
 				end
+				persist()
+				render()
+				showToast("Removed from My IDs", true)
+			end)
+		end
+	end
+
+	local function localList(source)
+		local list = {}
+		local query = string.lower(keyword)
+		local entries = {}
+		if CATS[catIndex].key == "Favorites" then
+			for _, entry in pairs(source) do
+				table.insert(entries, entry)
 			end
-			state.fav[item.id] = nil
-			persist()
-			render()
-			showToast("Item removed: " .. item.name, true)
-		end)
+			table.sort(entries, function(a, b)
+				return string.lower(tostring(a.name)) < string.lower(tostring(b.name))
+			end)
+		else
+			entries = source
+		end
+		for _, entry in ipairs(entries) do
+			local name = tostring(entry.name)
+			local id = tostring(entry.id)
+			if query == "" or string.find(string.lower(name), query, 1, true) or string.find(id, query, 1, true) then
+				table.insert(list, { id = id, name = name, typeId = entry.typeId, creator = tostring(entry.creator or "") })
+			end
+		end
+		return list
 	end
 
 	render = function()
-		for _, child in ipairs(listFrame:GetChildren()) do
+		for _, child in ipairs(grid:GetChildren()) do
 			if child:IsA("GuiObject") then
 				child:Destroy()
 			end
 		end
-		local items = visibleItems()
-		if #items == 0 then
-			if filterKey == "Favorites" and trim(searchText) == "" then
-				emptyLabel.Text = "No favorites yet" .. utf8.char(10) .. "Tap the star on an item to pin it"
+		paintChips()
+		local cat = CATS[catIndex]
+		local isMine = cat.key == "MyIds"
+		addPanel.Visible = isMine
+		grid.Position = UDim2.fromOffset(0, isMine and 122 or 78)
+		grid.Size = UDim2.fromOffset(588, isMine and 234 or 278)
+		statusLabel.Position = grid.Position
+		statusLabel.Size = grid.Size
+
+		local list = items
+		if cat.key == "Favorites" then
+			list = localList(st.fav)
+		elseif isMine then
+			list = localList(st.mine)
+		end
+
+		local lineBreak = utf8.char(10)
+		if #list == 0 then
+			grid.Visible = false
+			statusLabel.Visible = true
+			if loading then
+				statusLabel.Text = "Loading from the store..."
+			elseif loadError then
+				statusLabel.Text = loadError .. lineBreak .. "Check that your executor allows HTTP requests, then tap the category again."
+			elseif cat.key == "Favorites" then
+				statusLabel.Text = "No favorites yet" .. lineBreak .. "Tap the star on any item to pin it"
+			elseif isMine then
+				statusLabel.Text = "Nothing saved here yet" .. lineBreak .. "Add an item by its asset ID above"
 			else
-				emptyLabel.Text = "No items found" .. utf8.char(10) .. "Try another search or category"
+				statusLabel.Text = "No results" .. lineBreak .. "Try another search or category"
 			end
+			return
 		end
-		emptyLabel.Visible = #items == 0
-		listFrame.Visible = #items > 0
-		for index, item in ipairs(items) do
-			buildRow(item, index)
+
+		statusLabel.Visible = false
+		grid.Visible = true
+		for index, item in ipairs(list) do
+			buildCard(item, index, isMine)
 		end
-		refreshChips()
-		updateCount()
+
+		if cat.typeId and (cursor or loading or loadError) then
+			local more = makeButton(grid, {
+				Text = loading and "Loading..." or (loadError and "Retry" or "Load more"),
+				LayoutOrder = 99999,
+				TextSize = 13,
+				Font = Enum.Font.GothamBlack,
+				TextColor3 = THEME.accent,
+			}, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 10 })
+			more.Activated:Connect(function()
+				if not loading then
+					refresh(false)
+				end
+			end)
+		end
 	end
 
-	H.renderToolbox = render
+	H.renderToolbox = function()
+		if not loadedOnce then
+			loadedOnce = true
+			refresh(true)
+		else
+			render()
+		end
+	end
 	render()
 end)
 if not builtOk then
