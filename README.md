@@ -45,28 +45,25 @@ v4: FULLY AUTOMATIC.
 - Effect data is saved inside each name (attributes), so everything survives save / reopen.
 - No backslash is used anywhere (Studio Lite deletes them on paste).
 ]]
-
 do -- BLOCK banner
-	local function u(...)
-		local out = {}
-		for _, code in ipairs({ ... }) do
-			out[#out + 1] = utf8.char(code)
-		end
-		return table.concat(out)
-	end
-	local pad = string.rep("_", 16)
-	print(pad .. u(0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2588, 0x2591, 0x2588, 0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2580, 0x2580, 0x2588) .. pad)
-	print(pad .. u(0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2584, 0x2580, 0x2584, 0x2591, 0x2588, 0x2591, 0x2588, 0x2591, 0x2584, 0x2580, 0x2591) .. pad)
-	print(pad .. u(0x2591, 0x2580, 0x2591, 0x2580, 0x2591, 0x2580, 0x2591, 0x2580, 0x2591, 0x2580, 0x2580, 0x2591, 0x2591, 0x2580, 0x2580, 0x2580) .. pad)
-	print(" ")
-	print(u(0x25C6) .. " RXDZ | STUDIO TOOLS")
-	print(u(0x25C6) .. " Name Maker " .. u(0x2022) .. " Toolbox " .. u(0x2022) .. " World")
-end -- BLOCK banner
-
-if not game:IsLoaded() then
-	game.Loaded:Wait()
+local function u(...)
+local out = {}
+for _, code in ipairs({ ... }) do
+out[#out + 1] = utf8.char(code)
 end
-
+return table.concat(out)
+end
+local pad = string.rep("_", 16)
+print(pad .. u(0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2588, 0x2591, 0x2588, 0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2580, 0x2580, 0x2588) .. pad)
+print(pad .. u(0x2591, 0x2588, 0x2580, 0x2584, 0x2591, 0x2584, 0x2580, 0x2584, 0x2591, 0x2588, 0x2591, 0x2588, 0x2591, 0x2584, 0x2580, 0x2591) .. pad)
+print(pad .. u(0x2591, 0x2580, 0x2591, 0x2580, 0x2591, 0x2580, 0x2591, 0x2580, 0x2591, 0x2580, 0x2580, 0x2591, 0x2591, 0x2580, 0x2580, 0x2580) .. pad)
+print(" ")
+print(u(0x25C6) .. " RXDZ | STUDIO TOOLS")
+print(u(0x25C6) .. " Name Maker " .. u(0x2022) .. " Toolbox " .. u(0x2022) .. " World")
+end -- BLOCK banner
+if not game:IsLoaded() then
+game.Loaded:Wait()
+end
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -74,1081 +71,928 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
 local Workspace = game:GetService("Workspace")
-
 local player = Players.LocalPlayer
-
----------------------------------------------------------------------
--- CONFIG  (fill the marked fields)
----------------------------------------------------------------------
 local CONFIG = {
-	Creator = "RiyadoDzz",
-	Community = "DZ HUP",
-	Discord = "https://discord.gg/Dj3CCnZAxJ",
-	WhatsApp = "https://whatsapp.com/channel/0029VbDuGkhGJP8DJbzVEG0K",
-	TikTok = "https://tiktok.com/@rx..dz",
-
-	-- Support me: Game Passes (the link is copied when the button is pressed)
-	SupportPasses = {
-		{ amount = 50, id = 1940166338 },
-		{ amount = 100, id = 1933036013 },
-	},
-
-	RobloxUsername = "RiyadoDzz",
-	AvatarRobloxUserId = 0,
-	AvatarImageUrl = "",
-
-	DefaultFont = "Rockwell",
-	Fonts = {
-		{ key = "Rockwell", title = "Rockwell", packId = 4506165589, letterIds = {} },
-		{ key = "GothamBlack", title = "Gotham Black", packId = 15715862597, letterIds = {} },
-		{ key = "Horror", title = "Horror", packId = 3789128815, letterIds = {} },
-	},
-
-	SaveFile = "DZHUP_NameMaker.json",
-	PromptOnLaunch = true,
-
-	-- Studio Lite refuses to play marketplace sounds (even by id), so the id is only used to try a
-	-- download. If you have the sound as a file, put it in your executor workspace folder with the
-	-- name below and it is used first.
-	ClickSoundFile = "DZHUP_click.mp3",
-	TryAssetIdDirect = false, -- true = also try rbxassetid directly (prints an error in Studio Lite)
-	ClickSoundAssetId = 70968472837037, -- played from a downloaded local file, so it works without publishing
-	ClickSoundIds = {
-		"rbxasset://sounds/button.wav",
-		"rbxasset://sounds/switch.wav",
-		"rbxasset://sounds/clickfast.wav",
-		"rbxassetid://421058925",
-		"rbxassetid://6895079853",
-	},
-	ClickSoundVolume = 0.8,
-
-	ToggleKey = Enum.KeyCode.RightShift,
-
-	WaveSpeed = 0.35,
-	WaveSpread = 1,
-
-	MaxNameLength = 24,
-	MaxNames = 40,
-	LetterGap = 0.16,
-	SpaceWidthRatio = 0.6,
-	PlaceDistance = 18,
-	MaxPlaceDistance = 150,
-	StackRadius = 25,
-	HeightOffset = 2.8,
-	FrontFaceIsNegativeZ = true,
-	RestoreMaxDistance = 150,
-
-	-- Toolbox
-	ToolboxPlaceDistance = 22, -- how far in front of the camera items are inserted
+Creator = "RiyadoDzz",
+Community = "DZ HUP",
+Discord = "https://discord.gg/Dj3CCnZAxJ",
+WhatsApp = "https://whatsapp.com/channel/0029VbDuGkhGJP8DJbzVEG0K",
+TikTok = "https://tiktok.com/@rx..dz",
+SupportPasses = {
+{ amount = 50, id = 1940166338 },
+{ amount = 100, id = 1933036013 },
+},
+RobloxUsername = "RiyadoDzz",
+AvatarRobloxUserId = 0,
+AvatarImageUrl = "",
+DefaultFont = "Rockwell",
+Fonts = {
+{ key = "Rockwell", title = "Rockwell", packId = 4506165589, letterIds = {} },
+{ key = "GothamBlack", title = "Gotham Black", packId = 15715862597, letterIds = {} },
+{ key = "Horror", title = "Horror", packId = 3789128815, letterIds = {} },
+},
+SaveFile = "DZHUP_NameMaker.json",
+PromptOnLaunch = true,
+ClickSoundFile = "DZHUP_click.mp3",
+TryAssetIdDirect = false, -- true = also try rbxassetid directly (prints an error in Studio Lite)
+ClickSoundAssetId = 70968472837037, -- played from a downloaded local file, so it works without publishing
+ClickSoundIds = {
+"rbxasset://sounds/button.wav",
+"rbxasset://sounds/switch.wav",
+"rbxasset://sounds/clickfast.wav",
+"rbxassetid://421058925",
+"rbxassetid://6895079853",
+},
+ClickSoundVolume = 0.8,
+ToggleKey = Enum.KeyCode.RightShift,
+WaveSpeed = 0.35,
+WaveSpread = 1,
+MaxNameLength = 24,
+MaxNames = 40,
+LetterGap = 0.16,
+SpaceWidthRatio = 0.6,
+PlaceDistance = 18,
+MaxPlaceDistance = 150,
+StackRadius = 25,
+HeightOffset = 2.8,
+FrontFaceIsNegativeZ = true,
+RestoreMaxDistance = 150,
+ToolboxPlaceDistance = 22, -- how far in front of the camera items are inserted
 }
-
 local FONTS = CONFIG.Fonts
 local FONT_BY_KEY = {}
 for _, font in ipairs(FONTS) do
-	FONT_BY_KEY[font.key] = font
+FONT_BY_KEY[font.key] = font
 end
 local function fontOf(key)
-	return FONT_BY_KEY[key] or FONT_BY_KEY[CONFIG.DefaultFont] or FONTS[1]
+return FONT_BY_KEY[key] or FONT_BY_KEY[CONFIG.DefaultFont] or FONTS[1]
 end
-
----------------------------------------------------------------------
--- Cleanup of an older run
----------------------------------------------------------------------
 local genv = (type(getgenv) == "function" and getgenv()) or _G
 if genv.DZHUP_NameMakerCleanup then
-	pcall(genv.DZHUP_NameMakerCleanup)
+pcall(genv.DZHUP_NameMakerCleanup)
 end
 local conns = {}
 local H = {} -- helper functions (kept in one table to save local variable slots)
 local function on(signal, fn)
-	local c = signal:Connect(fn)
-	table.insert(conns, c)
-	return c
+local c = signal:Connect(fn)
+table.insert(conns, c)
+return c
 end
-
----------------------------------------------------------------------
--- Executor helpers
----------------------------------------------------------------------
 local hasFS = type(writefile) == "function" and type(readfile) == "function" and type(isfile) == "function"
-
 local function copyText(text)
-	local fn = setclipboard or toclipboard or set_clipboard
-	if type(fn) == "function" then
-		local ok = pcall(fn, text)
-		return ok
-	end
-	return false
+local fn = setclipboard or toclipboard or set_clipboard
+if type(fn) == "function" then
+local ok = pcall(fn, text)
+return ok
 end
-
+return false
+end
 local function loadObject(id)
-	local ok, result = pcall(function()
-		return game:GetObjects("rbxassetid://" .. tostring(id))
-	end)
-	if ok and type(result) == "table" and result[1] then
-		return result[1]
-	end
-	return nil, tostring(result)
+local ok, result = pcall(function()
+return game:GetObjects("rbxassetid://" .. tostring(id))
+end)
+if ok and type(result) == "table" and result[1] then
+return result[1]
 end
-
----------------------------------------------------------------------
--- Saved data
----------------------------------------------------------------------
+return nil, tostring(result)
+end
 local save = { settings = {}, places = {} }
 if hasFS and isfile(CONFIG.SaveFile) then
-	pcall(function()
-		local decoded = HttpService:JSONDecode(readfile(CONFIG.SaveFile))
-		if type(decoded) == "table" then
-			save.settings = type(decoded.settings) == "table" and decoded.settings or {}
-			save.places = type(decoded.places) == "table" and decoded.places or {}
-		end
-	end)
+pcall(function()
+local decoded = HttpService:JSONDecode(readfile(CONFIG.SaveFile))
+if type(decoded) == "table" then
+save.settings = type(decoded.settings) == "table" and decoded.settings or {}
+save.places = type(decoded.places) == "table" and decoded.places or {}
 end
-
+end)
+end
 local function computeKey()
-	local id = game.PlaceId
-	if type(id) == "number" and id ~= 0 then
-		return tostring(id)
-	end
-	local ok, projectName = pcall(function()
-		return game.Name
-	end)
-	return "0|" .. tostring(ok and projectName or "project")
+local id = game.PlaceId
+if type(id) == "number" and id ~= 0 then
+return tostring(id)
+end
+local ok, projectName = pcall(function()
+return game.Name
+end)
+return "0|" .. tostring(ok and projectName or "project")
 end
 local placeKey = computeKey()
 if type(save.places[placeKey]) ~= "table" then
-	-- older versions saved every unsaved project under "0": move that list to this project once
-	if type(save.places["0"]) == "table" and string.sub(placeKey, 1, 2) == "0|" then
-		save.places[placeKey] = save.places["0"]
-		save.places["0"] = nil
-	else
-		save.places[placeKey] = {}
-	end
+if type(save.places["0"]) == "table" and string.sub(placeKey, 1, 2) == "0|" then
+save.places[placeKey] = save.places["0"]
+save.places["0"] = nil
+else
+save.places[placeKey] = {}
+end
 end
 local names = save.places[placeKey]
-
 local function persist()
-	if not hasFS then
-		return false
-	end
-	local ok = pcall(function()
-		writefile(CONFIG.SaveFile, HttpService:JSONEncode(save))
-	end)
-	return ok
+if not hasFS then
+return false
 end
-
----------------------------------------------------------------------
--- Theme (dark)
----------------------------------------------------------------------
+local ok = pcall(function()
+writefile(CONFIG.SaveFile, HttpService:JSONEncode(save))
+end)
+return ok
+end
 local THEME = {
-	bg = Color3.fromRGB(14, 16, 23),
-	bgTop = Color3.fromRGB(24, 27, 38),
-	header = Color3.fromRGB(17, 19, 27),
-	surface = Color3.fromRGB(23, 26, 36),
-	surface2 = Color3.fromRGB(33, 37, 50),
-	field = Color3.fromRGB(13, 15, 21),
-	line = Color3.fromRGB(50, 56, 75),
-	text = Color3.fromRGB(238, 241, 248),
-	muted = Color3.fromRGB(140, 149, 172),
-	dark = Color3.fromRGB(22, 19, 12),
-	accent = Color3.fromRGB(240, 185, 80),
-	accentSoft = Color3.fromRGB(255, 218, 150),
-	danger = Color3.fromRGB(240, 98, 110),
-	success = Color3.fromRGB(96, 214, 150),
-	discord = Color3.fromRGB(88, 101, 242),
-	whatsapp = Color3.fromRGB(37, 211, 102),
-	tiktok = Color3.fromRGB(254, 44, 85),
+bg = Color3.fromRGB(14, 16, 23),
+bgTop = Color3.fromRGB(24, 27, 38),
+header = Color3.fromRGB(17, 19, 27),
+surface = Color3.fromRGB(23, 26, 36),
+surface2 = Color3.fromRGB(33, 37, 50),
+field = Color3.fromRGB(13, 15, 21),
+line = Color3.fromRGB(50, 56, 75),
+text = Color3.fromRGB(238, 241, 248),
+muted = Color3.fromRGB(140, 149, 172),
+dark = Color3.fromRGB(22, 19, 12),
+accent = Color3.fromRGB(240, 185, 80),
+accentSoft = Color3.fromRGB(255, 218, 150),
+danger = Color3.fromRGB(240, 98, 110),
+success = Color3.fromRGB(96, 214, 150),
+discord = Color3.fromRGB(88, 101, 242),
+whatsapp = Color3.fromRGB(37, 211, 102),
+tiktok = Color3.fromRGB(254, 44, 85),
 }
-
 local PALETTE = {
-	{ "White", Color3.fromRGB(245, 245, 245) },
-	{ "Gold", Color3.fromRGB(255, 211, 105) },
-	{ "Orange", Color3.fromRGB(255, 150, 60) },
-	{ "Red", Color3.fromRGB(255, 70, 75) },
-	{ "Pink", Color3.fromRGB(255, 105, 190) },
-	{ "Purple", Color3.fromRGB(170, 115, 255) },
-	{ "Blue", Color3.fromRGB(65, 150, 255) },
-	{ "Cyan", Color3.fromRGB(80, 230, 240) },
-	{ "Green", Color3.fromRGB(70, 225, 145) },
-	{ "Lime", Color3.fromRGB(190, 240, 70) },
-	{ "Silver", Color3.fromRGB(170, 176, 190) },
-	{ "Black", Color3.fromRGB(34, 34, 40) },
+{ "White", Color3.fromRGB(245, 245, 245) },
+{ "Gold", Color3.fromRGB(255, 211, 105) },
+{ "Orange", Color3.fromRGB(255, 150, 60) },
+{ "Red", Color3.fromRGB(255, 70, 75) },
+{ "Pink", Color3.fromRGB(255, 105, 190) },
+{ "Purple", Color3.fromRGB(170, 115, 255) },
+{ "Blue", Color3.fromRGB(65, 150, 255) },
+{ "Cyan", Color3.fromRGB(80, 230, 240) },
+{ "Green", Color3.fromRGB(70, 225, 145) },
+{ "Lime", Color3.fromRGB(190, 240, 70) },
+{ "Silver", Color3.fromRGB(170, 176, 190) },
+{ "Black", Color3.fromRGB(34, 34, 40) },
 }
-
 local STYLES = {
-	{ key = "Plastic", title = "Plastic" },
-	{ key = "Neon", title = "Neon" },
-	{ key = "Metal", title = "Metal" },
-	{ key = "Glass", title = "Glass" },
-	{ key = "Modern", title = "Modern" },
+{ key = "Plastic", title = "Plastic" },
+{ key = "Neon", title = "Neon" },
+{ key = "Metal", title = "Metal" },
+{ key = "Glass", title = "Glass" },
+{ key = "Modern", title = "Modern" },
 }
 local STYLE_TITLES = {}
 for _, item in ipairs(STYLES) do
-	STYLE_TITLES[item.key] = item.title
+STYLE_TITLES[item.key] = item.title
 end
-
 local STYLE_DEFS = {
-	Plastic = { material = Enum.Material.SmoothPlastic, reflectance = 0.03, transparency = 0 },
-	Neon = { material = Enum.Material.Neon, reflectance = 0, transparency = 0 },
-	Metal = { material = Enum.Material.Metal, reflectance = 0.12, transparency = 0 },
-	Glass = { material = Enum.Material.Glass, reflectance = 0.08, transparency = 0.12 },
-	Modern = { material = Enum.Material.SmoothPlastic, reflectance = 0.08, transparency = 0 },
+Plastic = { material = Enum.Material.SmoothPlastic, reflectance = 0.03, transparency = 0 },
+Neon = { material = Enum.Material.Neon, reflectance = 0, transparency = 0 },
+Metal = { material = Enum.Material.Metal, reflectance = 0.12, transparency = 0 },
+Glass = { material = Enum.Material.Glass, reflectance = 0.08, transparency = 0.12 },
+Modern = { material = Enum.Material.SmoothPlastic, reflectance = 0.08, transparency = 0 },
 }
-
----------------------------------------------------------------------
--- UI helpers
----------------------------------------------------------------------
 local function new(className, props, parent)
-	local instance = Instance.new(className)
-	for key, value in pairs(props) do
-		instance[key] = value
-	end
-	instance.Parent = parent
-	return instance
+local instance = Instance.new(className)
+for key, value in pairs(props) do
+instance[key] = value
 end
-
+instance.Parent = parent
+return instance
+end
 local function corner(parent, radius)
-	return new("UICorner", { CornerRadius = UDim.new(0, radius) }, parent)
+return new("UICorner", { CornerRadius = UDim.new(0, radius) }, parent)
 end
-
 local function stroke(parent, color, transparency, thickness)
-	return new("UIStroke", {
-		Color = color,
-		Transparency = transparency,
-		Thickness = thickness or 1,
-		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-	}, parent)
+return new("UIStroke", {
+Color = color,
+Transparency = transparency,
+Thickness = thickness or 1,
+ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+}, parent)
 end
-
 local function tween(instance, duration, goal, style, direction, delay)
-	local t = TweenService:Create(
-		instance,
-		TweenInfo.new(
-			duration,
-			style or Enum.EasingStyle.Quad,
-			direction or Enum.EasingDirection.Out,
-			0,
-			false,
-			delay or 0
-		),
-		goal
-	)
-	t:Play()
-	return t
+local t = TweenService:Create(
+instance,
+TweenInfo.new(
+duration,
+style or Enum.EasingStyle.Quad,
+direction or Enum.EasingDirection.Out,
+0,
+false,
+delay or 0
+),
+goal
+)
+t:Play()
+return t
 end
-
 local function loop(instance, duration, goal, style, reverses)
-	local t = TweenService:Create(
-		instance,
-		TweenInfo.new(duration, style or Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, reverses ~= false),
-		goal
-	)
-	t:Play()
-	return t
+local t = TweenService:Create(
+instance,
+TweenInfo.new(duration, style or Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, reverses ~= false),
+goal
+)
+t:Play()
+return t
 end
-
 local function textLabel(parent, text, props)
-	props.BackgroundTransparency = 1
-	props.Text = text
-	props.Font = props.Font or Enum.Font.GothamBold
-	props.TextColor3 = props.TextColor3 or THEME.text
-	props.TextSize = props.TextSize or 13
-	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
-	return new("TextLabel", props, parent)
+props.BackgroundTransparency = 1
+props.Text = text
+props.Font = props.Font or Enum.Font.GothamBold
+props.TextColor3 = props.TextColor3 or THEME.text
+props.TextSize = props.TextSize or 13
+props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
+return new("TextLabel", props, parent)
 end
-
 local function makeButton(parent, props, options)
-	options = options or {}
-	local fill = options.fill or THEME.surface2
-	local hoverFill = options.hover or fill:Lerp(Color3.new(1, 1, 1), 0.08)
-	local pressFill = fill:Lerp(Color3.new(0, 0, 0), 0.25)
-
-	props.BackgroundColor3 = fill
-	props.AutoButtonColor = false
-	props.BorderSizePixel = 0
-	props.Font = props.Font or Enum.Font.GothamBold
-	props.TextColor3 = props.TextColor3 or THEME.text
-	props.TextSize = props.TextSize or 13
-
-	local button = new("TextButton", props, parent)
-	corner(button, options.radius or 9)
-	local buttonStroke = stroke(button, options.stroke or THEME.line, options.strokeTransparency or 0.3, 1)
-
-	local hovering = false
-	button.MouseEnter:Connect(function()
-		hovering = true
-		tween(button, 0.12, { BackgroundColor3 = hoverFill })
-	end)
-	button.MouseLeave:Connect(function()
-		hovering = false
-		tween(button, 0.12, { BackgroundColor3 = fill })
-	end)
-	button.MouseButton1Down:Connect(function()
-		tween(button, 0.06, { BackgroundColor3 = pressFill })
-	end)
-	button.MouseButton1Up:Connect(function()
-		tween(button, 0.1, { BackgroundColor3 = hovering and hoverFill or fill })
-	end)
-	return button, buttonStroke
+options = options or {}
+local fill = options.fill or THEME.surface2
+local hoverFill = options.hover or fill:Lerp(Color3.new(1, 1, 1), 0.08)
+local pressFill = fill:Lerp(Color3.new(0, 0, 0), 0.25)
+props.BackgroundColor3 = fill
+props.AutoButtonColor = false
+props.BorderSizePixel = 0
+props.Font = props.Font or Enum.Font.GothamBold
+props.TextColor3 = props.TextColor3 or THEME.text
+props.TextSize = props.TextSize or 13
+local button = new("TextButton", props, parent)
+corner(button, options.radius or 9)
+local buttonStroke = stroke(button, options.stroke or THEME.line, options.strokeTransparency or 0.3, 1)
+local hovering = false
+button.MouseEnter:Connect(function()
+hovering = true
+tween(button, 0.12, { BackgroundColor3 = hoverFill })
+end)
+button.MouseLeave:Connect(function()
+hovering = false
+tween(button, 0.12, { BackgroundColor3 = fill })
+end)
+button.MouseButton1Down:Connect(function()
+tween(button, 0.06, { BackgroundColor3 = pressFill })
+end)
+button.MouseButton1Up:Connect(function()
+tween(button, 0.1, { BackgroundColor3 = hovering and hoverFill or fill })
+end)
+return button, buttonStroke
 end
-
 local function trim(text)
-	return (string.gsub(string.gsub(text, "^%s+", ""), "%s+$", ""))
+return (string.gsub(string.gsub(text, "^%s+", ""), "%s+$", ""))
 end
-
----------------------------------------------------------------------
--- Roots
----------------------------------------------------------------------
 local namesFolder = Workspace:FindFirstChild("DZHUP_Names")
 if not namesFolder then
-	namesFolder = Instance.new("Folder")
-	namesFolder.Name = "DZHUP_Names"
-	namesFolder.Parent = Workspace
+namesFolder = Instance.new("Folder")
+namesFolder.Name = "DZHUP_Names"
+namesFolder.Parent = Workspace
 end
-
--- Studio Lite replaces the whole world when you leave Play mode or open another project.
--- The folder we held becomes a dead object (new names went into the trash). So the folder is
--- looked up again every time something is built.
 function H.getFolder()
-	Workspace = game:GetService("Workspace")
-	local folder = namesFolder
-	local alive = false
-	pcall(function()
-		alive = folder ~= nil and folder.Parent == Workspace and folder:IsDescendantOf(game)
-	end)
-	if alive then
-		return folder
-	end
-	folder = Workspace:FindFirstChild("DZHUP_Names")
-	if not folder then
-		folder = Instance.new("Folder")
-		folder.Name = "DZHUP_Names"
-		folder.Parent = Workspace
-	end
-	namesFolder = folder
-	return folder
+Workspace = game:GetService("Workspace")
+local folder = namesFolder
+local alive = false
+pcall(function()
+alive = folder ~= nil and folder.Parent == Workspace and folder:IsDescendantOf(game)
+end)
+if alive then
+return folder
 end
-
+folder = Workspace:FindFirstChild("DZHUP_Names")
+if not folder then
+folder = Instance.new("Folder")
+folder.Name = "DZHUP_Names"
+folder.Parent = Workspace
+end
+namesFolder = folder
+return folder
+end
 local guiParent
 do
-	local ok, hui = pcall(function()
-		return type(gethui) == "function" and gethui() or nil
-	end)
-	guiParent = (ok and hui) or player:WaitForChild("PlayerGui")
+local ok, hui = pcall(function()
+return type(gethui) == "function" and gethui() or nil
+end)
+guiParent = (ok and hui) or player:WaitForChild("PlayerGui")
 end
 pcall(function()
-	for _, child in ipairs(guiParent:GetChildren()) do
-		if child.Name == "DZHUP_NameMaker" then
-			child:Destroy()
-		end
-	end
+for _, child in ipairs(guiParent:GetChildren()) do
+if child.Name == "DZHUP_NameMaker" then
+child:Destroy()
+end
+end
 end)
-
 local PANEL_W, PANEL_H = 620, 510
 local MIN_SCALE = 0.4
-
 local gui = new("ScreenGui", {
-	Name = "DZHUP_NameMaker",
-	ResetOnSpawn = false,
-	IgnoreGuiInset = true,
-	DisplayOrder = 999,
-	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+Name = "DZHUP_NameMaker",
+ResetOnSpawn = false,
+IgnoreGuiInset = true,
+DisplayOrder = 999,
+ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 }, guiParent)
-
----------------------------------------------------------------------
--- Button click sound (every TextButton in the interface)
----------------------------------------------------------------------
 local SoundService = game:GetService("SoundService")
 local ContentProvider = game:GetService("ContentProvider")
-
 pcall(function()
-	for _, old in ipairs(SoundService:GetChildren()) do
-		if old.Name == "DZHUP_ClickSound" then
-			old:Destroy()
-		end
-	end
-end)
-
-local clickSound = new("Sound", {
-	Name = "DZHUP_ClickSound",
-	SoundId = CONFIG.ClickSoundIds[1],
-	Volume = CONFIG.ClickSoundVolume,
-}, SoundService)
-
-task.spawn(function()
-	local candidates = {}
-	local assetId = CONFIG.ClickSoundAssetId
-	local localAsset = nil
-
-	-- 0) your own file in the executor workspace folder
-	if hasFS and type(getcustomasset) == "function" and CONFIG.ClickSoundFile then
-		local found = false
-		pcall(function()
-			found = isfile(CONFIG.ClickSoundFile)
-		end)
-		if found then
-			local ok, asset = pcall(getcustomasset, CONFIG.ClickSoundFile)
-			if ok and asset then
-				localAsset = asset
-				table.insert(candidates, asset)
-			end
-		end
-	end
-
-	-- 1) download the sound once and play it from a local file (works in Studio Lite,
-	--    no publishing and no asset permission needed)
-	if assetId and hasFS and type(getcustomasset) == "function" then
-		local fileName = "DZHUP_click_" .. tostring(assetId) .. ".mp3"
-		local have = false
-		pcall(function()
-			have = isfile(fileName) and #readfile(fileName) > 1000
-		end)
-		if not have then
-			local function download(url)
-				local ok, body = pcall(function()
-					return game:HttpGet(url)
-				end)
-				if ok and type(body) == "string" and #body > 1000 and string.sub(body, 1, 7) ~= "<roblox" then
-					return body
-				end
-				for _, key in ipairs({ "request", "http_request" }) do
-					local fn = genv[key] or _G[key]
-					if type(fn) == "function" then
-						local ok2, response = pcall(fn, { Url = url, Method = "GET" })
-						local data = ok2 and type(response) == "table" and response.Body
-						if type(data) == "string" and #data > 1000 and string.sub(data, 1, 7) ~= "<roblox" then
-							return data
-						end
-					end
-				end
-				if type(genv.syn) == "table" and type(genv.syn.request) == "function" then
-					local ok3, response = pcall(genv.syn.request, { Url = url, Method = "GET" })
-					local data = ok3 and type(response) == "table" and response.Body
-					if type(data) == "string" and #data > 1000 and string.sub(data, 1, 7) ~= "<roblox" then
-						return data
-					end
-				end
-				return nil
-			end
-			local body = download("https://assetdelivery.roblox.com/v1/asset/?id=" .. tostring(assetId))
-				or download("https://assetdelivery.roblox.com/v1/asset?id=" .. tostring(assetId))
-			if body then
-				pcall(function()
-					writefile(fileName, body)
-					have = true
-				end)
-			end
-		end
-		if have then
-			local ok, asset = pcall(getcustomasset, fileName)
-			if ok and asset then
-				localAsset = asset
-				table.insert(candidates, asset)
-			end
-		end
-	end
-	-- 2) the asset id itself, then the official Roblox sounds
-	if assetId and CONFIG.TryAssetIdDirect then
-		table.insert(candidates, "rbxassetid://" .. tostring(assetId))
-	end
-	for _, id in ipairs(CONFIG.ClickSoundIds) do
-		table.insert(candidates, id)
-	end
-
-	for _, id in ipairs(candidates) do
-		local test = Instance.new("Sound")
-		test.SoundId = id
-		test.Volume = 0
-		test.Parent = SoundService
-		pcall(function()
-			ContentProvider:PreloadAsync({ test })
-		end)
-		local waited = 0
-		while not test.IsLoaded and waited < 2 do
-			task.wait(0.1)
-			waited += 0.1
-		end
-		local works = test.IsLoaded and test.TimeLength > 0
-		test:Destroy()
-		if works then
-			clickSound.SoundId = id
-			return
-		end
-	end
-	-- forced: if nothing could be verified, still use the downloaded file
-	if localAsset then
-		clickSound.SoundId = localAsset
-	end
-end)
-
-local function playClick()
-	pcall(function()
-		clickSound.TimePosition = 0
-		clickSound:Play()
-	end)
+for _, old in ipairs(SoundService:GetChildren()) do
+if old.Name == "DZHUP_ClickSound" then
+old:Destroy()
 end
-
+end
+end)
+local clickSound = new("Sound", {
+Name = "DZHUP_ClickSound",
+SoundId = CONFIG.ClickSoundIds[1],
+Volume = CONFIG.ClickSoundVolume,
+}, SoundService)
+task.spawn(function()
+local candidates = {}
+local assetId = CONFIG.ClickSoundAssetId
+local localAsset = nil
+if hasFS and type(getcustomasset) == "function" and CONFIG.ClickSoundFile then
+local found = false
+pcall(function()
+found = isfile(CONFIG.ClickSoundFile)
+end)
+if found then
+local ok, asset = pcall(getcustomasset, CONFIG.ClickSoundFile)
+if ok and asset then
+localAsset = asset
+table.insert(candidates, asset)
+end
+end
+end
+if assetId and hasFS and type(getcustomasset) == "function" then
+local fileName = "DZHUP_click_" .. tostring(assetId) .. ".mp3"
+local have = false
+pcall(function()
+have = isfile(fileName) and #readfile(fileName) > 1000
+end)
+if not have then
+local function download(url)
+local ok, body = pcall(function()
+return game:HttpGet(url)
+end)
+if ok and type(body) == "string" and #body > 1000 and string.sub(body, 1, 7) ~= "<roblox" then
+return body
+end
+for _, key in ipairs({ "request", "http_request" }) do
+local fn = genv[key] or _G[key]
+if type(fn) == "function" then
+local ok2, response = pcall(fn, { Url = url, Method = "GET" })
+local data = ok2 and type(response) == "table" and response.Body
+if type(data) == "string" and #data > 1000 and string.sub(data, 1, 7) ~= "<roblox" then
+return data
+end
+end
+end
+if type(genv.syn) == "table" and type(genv.syn.request) == "function" then
+local ok3, response = pcall(genv.syn.request, { Url = url, Method = "GET" })
+local data = ok3 and type(response) == "table" and response.Body
+if type(data) == "string" and #data > 1000 and string.sub(data, 1, 7) ~= "<roblox" then
+return data
+end
+end
+return nil
+end
+local body = download("https://assetdelivery.roblox.com/v1/asset/?id=" .. tostring(assetId))
+or download("https://assetdelivery.roblox.com/v1/asset?id=" .. tostring(assetId))
+if body then
+pcall(function()
+writefile(fileName, body)
+have = true
+end)
+end
+end
+if have then
+local ok, asset = pcall(getcustomasset, fileName)
+if ok and asset then
+localAsset = asset
+table.insert(candidates, asset)
+end
+end
+end
+if assetId and CONFIG.TryAssetIdDirect then
+table.insert(candidates, "rbxassetid://" .. tostring(assetId))
+end
+for _, id in ipairs(CONFIG.ClickSoundIds) do
+table.insert(candidates, id)
+end
+for _, id in ipairs(candidates) do
+local test = Instance.new("Sound")
+test.SoundId = id
+test.Volume = 0
+test.Parent = SoundService
+pcall(function()
+ContentProvider:PreloadAsync({ test })
+end)
+local waited = 0
+while not test.IsLoaded and waited < 2 do
+task.wait(0.1)
+waited += 0.1
+end
+local works = test.IsLoaded and test.TimeLength > 0
+test:Destroy()
+if works then
+clickSound.SoundId = id
+return
+end
+end
+if localAsset then
+clickSound.SoundId = localAsset
+end
+end)
+local function playClick()
+pcall(function()
+clickSound.TimePosition = 0
+clickSound:Play()
+end)
+end
 local function hookClick(instance)
-	if instance:IsA("TextButton") and instance.Name ~= "ResizeHandle" then
-		instance.Activated:Connect(playClick)
-	end
+if instance:IsA("TextButton") and instance.Name ~= "ResizeHandle" then
+instance.Activated:Connect(playClick)
+end
 end
 gui.DescendantAdded:Connect(hookClick)
-
 local backdrop = new("Frame", {
-	Name = "Backdrop",
-	Size = UDim2.fromScale(1, 1),
-	BackgroundColor3 = Color3.new(0, 0, 0),
-	BackgroundTransparency = 1,
-	BorderSizePixel = 0,
-	Visible = false,
+Name = "Backdrop",
+Size = UDim2.fromScale(1, 1),
+BackgroundColor3 = Color3.new(0, 0, 0),
+BackgroundTransparency = 1,
+BorderSizePixel = 0,
+Visible = false,
 }, gui)
-
 local openButton, openStroke = makeButton(gui, {
-	Text = "RX",
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 12, 0.5, 0),
-	Size = UDim2.fromOffset(44, 44),
-	TextSize = 14,
-	Font = Enum.Font.GothamBlack,
+Text = "RX",
+AnchorPoint = Vector2.new(0, 0.5),
+Position = UDim2.new(0, 12, 0.5, 0),
+Size = UDim2.fromOffset(44, 44),
+TextSize = 14,
+Font = Enum.Font.GothamBlack,
 }, { fill = THEME.header, stroke = THEME.accent, strokeTransparency = 0.6, radius = 22 })
 openButton.TextColor3 = THEME.accent
 openButton.BackgroundTransparency = 0.5
 openButton.TextTransparency = 0.1
 local openButtonScale = new("UIScale", { Scale = 1 }, openButton)
-
 local holder = new("Frame", {
-	Name = "Holder",
-	Position = UDim2.fromOffset(0, 0),
-	Size = UDim2.fromOffset(PANEL_W, PANEL_H),
-	BackgroundTransparency = 1,
-	Visible = false,
+Name = "Holder",
+Position = UDim2.fromOffset(0, 0),
+Size = UDim2.fromOffset(PANEL_W, PANEL_H),
+BackgroundTransparency = 1,
+Visible = false,
 }, gui)
 local scaler = new("UIScale", { Scale = 1 }, holder)
-
 local panel = new("Frame", {
-	Name = "Panel",
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromScale(1, 1),
-	BackgroundColor3 = THEME.bg,
-	BorderSizePixel = 0,
-	ClipsDescendants = true,
+Name = "Panel",
+AnchorPoint = Vector2.new(0.5, 0.5),
+Position = UDim2.fromScale(0.5, 0.5),
+Size = UDim2.fromScale(1, 1),
+BackgroundColor3 = THEME.bg,
+BorderSizePixel = 0,
+ClipsDescendants = true,
 }, holder)
 corner(panel, 16)
 local panelStroke = stroke(panel, THEME.line, 0.2, 1.2)
 local popScale = new("UIScale", { Scale = 0.9 }, panel)
-
 do -- BLOCK fillFrame
 local fillFrame = new("Frame", {
-	Size = UDim2.fromScale(1, 1),
-	BackgroundColor3 = Color3.new(1, 1, 1),
-	BorderSizePixel = 0,
+Size = UDim2.fromScale(1, 1),
+BackgroundColor3 = Color3.new(1, 1, 1),
+BorderSizePixel = 0,
 }, panel)
 corner(fillFrame, 16)
 new("UIGradient", { Color = ColorSequence.new(THEME.bgTop, THEME.bg), Rotation = 90 }, fillFrame)
 end -- BLOCK fillFrame
-
----------------------------------------------------------------------
--- Position and size
----------------------------------------------------------------------
 local placed = false
-
 local function maxScaleFor(x, y)
-	local v = gui.AbsoluteSize
-	return math.max(MIN_SCALE, math.min((v.X - x) / PANEL_W, (v.Y - y) / PANEL_H, 1.8))
+local v = gui.AbsoluteSize
+return math.max(MIN_SCALE, math.min((v.X - x) / PANEL_W, (v.Y - y) / PANEL_H, 1.8))
 end
-
 local function defaultScale()
-	local v = gui.AbsoluteSize
-	return math.clamp(math.min(v.X * 0.94 / PANEL_W, v.Y * 0.9 / PANEL_H), MIN_SCALE, 1.25)
+local v = gui.AbsoluteSize
+return math.clamp(math.min(v.X * 0.94 / PANEL_W, v.Y * 0.9 / PANEL_H), MIN_SCALE, 1.25)
 end
-
 local function clampHolder()
-	local v = gui.AbsoluteSize
-	local w, h = PANEL_W * scaler.Scale, PANEL_H * scaler.Scale
-	local x = math.clamp(holder.Position.X.Offset, 0, math.max(0, v.X - w))
-	local y = math.clamp(holder.Position.Y.Offset, 0, math.max(0, v.Y - h))
-	holder.Position = UDim2.fromOffset(x, y)
+local v = gui.AbsoluteSize
+local w, h = PANEL_W * scaler.Scale, PANEL_H * scaler.Scale
+local x = math.clamp(holder.Position.X.Offset, 0, math.max(0, v.X - w))
+local y = math.clamp(holder.Position.Y.Offset, 0, math.max(0, v.Y - h))
+holder.Position = UDim2.fromOffset(x, y)
 end
-
 local function placeInitially()
-	local v = gui.AbsoluteSize
-	scaler.Scale = defaultScale()
-	local w, h = PANEL_W * scaler.Scale, PANEL_H * scaler.Scale
-	holder.Position = UDim2.fromOffset(math.max(0, (v.X - w) / 2), math.max(0, (v.Y - h) / 2))
-	placed = true
+local v = gui.AbsoluteSize
+scaler.Scale = defaultScale()
+local w, h = PANEL_W * scaler.Scale, PANEL_H * scaler.Scale
+holder.Position = UDim2.fromOffset(math.max(0, (v.X - w) / 2), math.max(0, (v.Y - h) / 2))
+placed = true
 end
-
 gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-	if not placed then
-		return
-	end
-	scaler.Scale = math.min(scaler.Scale, maxScaleFor(0, 0))
-	clampHolder()
+if not placed then
+return
+end
+scaler.Scale = math.min(scaler.Scale, maxScaleFor(0, 0))
+clampHolder()
 end)
-
----------------------------------------------------------------------
--- Header
----------------------------------------------------------------------
 local header = new("Frame", {
-	Name = "Header",
-	Size = UDim2.new(1, 0, 0, 56),
-	BackgroundColor3 = THEME.header,
-	BorderSizePixel = 0,
-	Active = true,
+Name = "Header",
+Size = UDim2.new(1, 0, 0, 56),
+BackgroundColor3 = THEME.header,
+BorderSizePixel = 0,
+Active = true,
 }, panel)
 corner(header, 16)
 new("Frame", {
-	Position = UDim2.fromOffset(0, 40),
-	Size = UDim2.new(1, 0, 0, 16),
-	BackgroundColor3 = THEME.header,
-	BorderSizePixel = 0,
+Position = UDim2.fromOffset(0, 40),
+Size = UDim2.new(1, 0, 0, 16),
+BackgroundColor3 = THEME.header,
+BorderSizePixel = 0,
 }, header)
-
 do -- BLOCK badge
 local badge = new("Frame", {
-	Position = UDim2.fromOffset(16, 12),
-	Size = UDim2.fromOffset(32, 32),
-	BackgroundColor3 = Color3.new(1, 1, 1),
-	BorderSizePixel = 0,
+Position = UDim2.fromOffset(16, 12),
+Size = UDim2.fromOffset(32, 32),
+BackgroundColor3 = Color3.new(1, 1, 1),
+BorderSizePixel = 0,
 }, header)
 corner(badge, 9)
 new("UIGradient", { Color = ColorSequence.new(THEME.accentSoft, THEME.accent), Rotation = 60 }, badge)
 textLabel(badge, "3D", {
-	Size = UDim2.fromScale(1, 1),
-	Font = Enum.Font.GothamBlack,
-	TextSize = 14,
-	TextColor3 = THEME.dark,
-	TextXAlignment = Enum.TextXAlignment.Center,
+Size = UDim2.fromScale(1, 1),
+Font = Enum.Font.GothamBlack,
+TextSize = 14,
+TextColor3 = THEME.dark,
+TextXAlignment = Enum.TextXAlignment.Center,
 })
 end -- BLOCK badge
-
 textLabel(header, "DZ HUP  Studio Tools", {
-	Position = UDim2.fromOffset(58, 10),
-	Size = UDim2.new(1, -260, 0, 20),
-	Font = Enum.Font.GothamBlack,
-	TextSize = 15,
+Position = UDim2.fromOffset(58, 10),
+Size = UDim2.new(1, -260, 0, 20),
+Font = Enum.Font.GothamBlack,
+TextSize = 15,
 })
 textLabel(header, "Name Maker  |  Toolbox  |  World", {
-	Position = UDim2.fromOffset(58, 31),
-	Size = UDim2.new(1, -260, 0, 16),
-	TextSize = 11,
-	TextColor3 = THEME.muted,
+Position = UDim2.fromOffset(58, 31),
+Size = UDim2.new(1, -260, 0, 16),
+TextSize = 11,
+TextColor3 = THEME.muted,
 })
-
 do -- BLOCK logo
 local logoHolder = new("Frame", {
-	AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -60, 0.5, 0),
-	Size = UDim2.fromOffset(70, 28),
-	BackgroundTransparency = 1,
+AnchorPoint = Vector2.new(1, 0.5),
+Position = UDim2.new(1, -60, 0.5, 0),
+Size = UDim2.fromOffset(70, 28),
+BackgroundTransparency = 1,
 }, header)
 local logoPill = new("Frame", {
-	Size = UDim2.fromScale(1, 1),
-	BackgroundColor3 = THEME.surface,
-	BorderSizePixel = 0,
+Size = UDim2.fromScale(1, 1),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
 }, logoHolder)
 corner(logoPill, 14)
 stroke(logoPill, THEME.accent, 0.1, 1.5)
 local logoText = textLabel(logoPill, "RXDZ", {
-	Size = UDim2.fromScale(1, 1),
-	Font = Enum.Font.GothamBlack,
-	TextSize = 13,
-	TextColor3 = Color3.new(1, 1, 1),
-	TextXAlignment = Enum.TextXAlignment.Center,
+Size = UDim2.fromScale(1, 1),
+Font = Enum.Font.GothamBlack,
+TextSize = 13,
+TextColor3 = Color3.new(1, 1, 1),
+TextXAlignment = Enum.TextXAlignment.Center,
 })
 local logoGradient = new("UIGradient", {
-	Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, THEME.accent),
-		ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
-		ColorSequenceKeypoint.new(1, THEME.accent),
-	}),
-	Offset = Vector2.new(-1, 0),
+Color = ColorSequence.new({
+ColorSequenceKeypoint.new(0, THEME.accent),
+ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
+ColorSequenceKeypoint.new(1, THEME.accent),
+}),
+Offset = Vector2.new(-1, 0),
 }, logoText)
 loop(logoGradient, 2, { Offset = Vector2.new(1, 0) }, Enum.EasingStyle.Linear, false)
 end -- BLOCK logo
-
 local closeButton = makeButton(header, {
-	Text = "X",
-	AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -14, 0.5, 0),
-	Size = UDim2.fromOffset(32, 32),
-	TextSize = 13,
-	Font = Enum.Font.GothamBlack,
-	TextColor3 = THEME.muted,
+Text = "X",
+AnchorPoint = Vector2.new(1, 0.5),
+Position = UDim2.new(1, -14, 0.5, 0),
+Size = UDim2.fromOffset(32, 32),
+TextSize = 13,
+Font = Enum.Font.GothamBlack,
+TextColor3 = THEME.muted,
 }, { fill = THEME.surface, stroke = THEME.line, strokeTransparency = 0.3, radius = 9, hover = THEME.danger })
 closeButton.MouseEnter:Connect(function()
-	tween(closeButton, 0.12, { TextColor3 = THEME.text })
+tween(closeButton, 0.12, { TextColor3 = THEME.text })
 end)
 closeButton.MouseLeave:Connect(function()
-	tween(closeButton, 0.12, { TextColor3 = THEME.muted })
+tween(closeButton, 0.12, { TextColor3 = THEME.muted })
 end)
-
 local sweep = new("Frame", {
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 56),
-	Size = UDim2.new(1, 0, 0, 1),
-	BackgroundColor3 = THEME.accent,
-	BackgroundTransparency = 0.6,
-	BorderSizePixel = 0,
-	ZIndex = 5,
+AnchorPoint = Vector2.new(0.5, 0),
+Position = UDim2.new(0.5, 0, 0, 56),
+Size = UDim2.new(1, 0, 0, 1),
+BackgroundColor3 = THEME.accent,
+BackgroundTransparency = 0.6,
+BorderSizePixel = 0,
+ZIndex = 5,
 }, panel)
 new("UIGradient", {
-	Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1),
-		NumberSequenceKeypoint.new(0.5, 0),
-		NumberSequenceKeypoint.new(1, 1),
-	}),
+Transparency = NumberSequence.new({
+NumberSequenceKeypoint.new(0, 1),
+NumberSequenceKeypoint.new(0.5, 0),
+NumberSequenceKeypoint.new(1, 1),
+}),
 }, sweep)
-
----------------------------------------------------------------------
--- Tabs and pages  (every tool = one tab + one page)
----------------------------------------------------------------------
 local TAB_Y, CONTENT_Y = 70, 120
-
 local tabTrack = new("Frame", {
-	Position = UDim2.fromOffset(16, TAB_Y),
-	Size = UDim2.fromOffset(588, 38),
-	BackgroundColor3 = THEME.field,
-	BorderSizePixel = 0,
-	ClipsDescendants = true,
+Position = UDim2.fromOffset(16, TAB_Y),
+Size = UDim2.fromOffset(588, 38),
+BackgroundColor3 = THEME.field,
+BorderSizePixel = 0,
+ClipsDescendants = true,
 }, panel)
 corner(tabTrack, 10)
 stroke(tabTrack, THEME.line, 0.5, 1)
-
 local tabScroll = new("ScrollingFrame", {
-	Size = UDim2.fromScale(1, 1),
-	BackgroundTransparency = 1,
-	BorderSizePixel = 0,
-	ScrollBarThickness = 0,
-	CanvasSize = UDim2.new(),
-	ScrollingDirection = Enum.ScrollingDirection.X,
+Size = UDim2.fromScale(1, 1),
+BackgroundTransparency = 1,
+BorderSizePixel = 0,
+ScrollBarThickness = 0,
+CanvasSize = UDim2.new(),
+ScrollingDirection = Enum.ScrollingDirection.X,
 }, tabTrack)
-
 local tabIndicator = new("Frame", {
-	Position = UDim2.fromOffset(4, 4),
-	Size = UDim2.fromOffset(84, 30),
-	BackgroundColor3 = Color3.new(1, 1, 1),
-	BorderSizePixel = 0,
+Position = UDim2.fromOffset(4, 4),
+Size = UDim2.fromOffset(84, 30),
+BackgroundColor3 = Color3.new(1, 1, 1),
+BorderSizePixel = 0,
 }, tabScroll)
 corner(tabIndicator, 7)
 new("UIGradient", { Color = ColorSequence.new(THEME.accentSoft, THEME.accent), Rotation = 90 }, tabIndicator)
-
 local content = new("Frame", {
-	Position = UDim2.fromOffset(16, CONTENT_Y),
-	Size = UDim2.fromOffset(588, 356),
-	BackgroundTransparency = 1,
+Position = UDim2.fromOffset(16, CONTENT_Y),
+Size = UDim2.fromOffset(588, 356),
+BackgroundTransparency = 1,
 }, panel)
 local function newPage()
-	return new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false }, content)
+return new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false }, content)
 end
 local createPage = newPage()
 local studioPage = newPage()
 local listPage = newPage()
 local aboutPage = newPage()
 local worldPage = newPage()
-
--- Module registry: every tool of this window is one module (one tab + one page + its own system).
--- def = { key, title, order, page (optional), build(page, ctx) (optional), onShow }
 H.modules = {}
 function H.registerModule(def)
-	def.page = def.page or newPage()
-	table.insert(H.modules, def)
-	return def.page
+def.page = def.page or newPage()
+table.insert(H.modules, def)
+return def.page
 end
 function H.setTabTitle(key, text)
-	for _, def in ipairs(H.modules) do
-		if def.key == key then
-			def.title = text
-			if def.button then
-				def.button.Text = text
-			end
-		end
-	end
+for _, def in ipairs(H.modules) do
+if def.key == key then
+def.title = text
+if def.button then
+def.button.Text = text
 end
-
+end
+end
+end
 textLabel(panel, "Drag the bottom-right corner to resize", {
-	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -10),
-	Size = UDim2.fromOffset(400, 14),
-	TextSize = 10,
-	TextColor3 = THEME.muted,
-	TextXAlignment = Enum.TextXAlignment.Center,
+AnchorPoint = Vector2.new(0.5, 1),
+Position = UDim2.new(0.5, 0, 1, -10),
+Size = UDim2.fromOffset(400, 14),
+TextSize = 10,
+TextColor3 = THEME.muted,
+TextXAlignment = Enum.TextXAlignment.Center,
 })
-
----------------------------------------------------------------------
--- Toast
----------------------------------------------------------------------
 local toast = new("Frame", {
-	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, 24),
-	AutomaticSize = Enum.AutomaticSize.XY,
-	BackgroundColor3 = THEME.header,
-	BackgroundTransparency = 1,
-	BorderSizePixel = 0,
-	ZIndex = 30,
-	Visible = false,
+AnchorPoint = Vector2.new(0.5, 1),
+Position = UDim2.new(0.5, 0, 1, 24),
+AutomaticSize = Enum.AutomaticSize.XY,
+BackgroundColor3 = THEME.header,
+BackgroundTransparency = 1,
+BorderSizePixel = 0,
+ZIndex = 30,
+Visible = false,
 }, panel)
 corner(toast, 10)
 local toastStroke = stroke(toast, THEME.line, 1, 1)
 new("UIPadding", {
-	PaddingTop = UDim.new(0, 8),
-	PaddingBottom = UDim.new(0, 8),
-	PaddingLeft = UDim.new(0, 16),
-	PaddingRight = UDim.new(0, 16),
+PaddingTop = UDim.new(0, 8),
+PaddingBottom = UDim.new(0, 8),
+PaddingLeft = UDim.new(0, 16),
+PaddingRight = UDim.new(0, 16),
 }, toast)
 local toastLabel = textLabel(toast, "", {
-	AutomaticSize = Enum.AutomaticSize.XY,
-	Size = UDim2.new(),
-	Font = Enum.Font.GothamBold,
-	TextSize = 12,
-	TextTransparency = 1,
-	ZIndex = 31,
-	TextXAlignment = Enum.TextXAlignment.Center,
+AutomaticSize = Enum.AutomaticSize.XY,
+Size = UDim2.new(),
+Font = Enum.Font.GothamBold,
+TextSize = 12,
+TextTransparency = 1,
+ZIndex = 31,
+TextXAlignment = Enum.TextXAlignment.Center,
 })
-
 local toastToken = 0
 local function showToast(message, good)
-	toastToken += 1
-	local token = toastToken
-	local color = good and THEME.success or THEME.danger
-
-	toastLabel.Text = message
-	toastLabel.TextColor3 = color
-	toastStroke.Color = color
-	toast.Visible = true
-	toast.Position = UDim2.new(0.5, 0, 1, 24)
-	tween(toast, 0.3, { Position = UDim2.new(0.5, 0, 1, -30), BackgroundTransparency = 0.05 }, Enum.EasingStyle.Quint)
-	tween(toastLabel, 0.2, { TextTransparency = 0 })
-	tween(toastStroke, 0.2, { Transparency = 0.35 })
-
-	task.delay(3.2, function()
-		if token ~= toastToken then
-			return
-		end
-		tween(toast, 0.22, { Position = UDim2.new(0.5, 0, 1, 24), BackgroundTransparency = 1 })
-		tween(toastLabel, 0.2, { TextTransparency = 1 })
-		tween(toastStroke, 0.2, { Transparency = 1 })
-		task.delay(0.25, function()
-			if token == toastToken then
-				toast.Visible = false
-			end
-		end)
-	end)
+toastToken += 1
+local token = toastToken
+local color = good and THEME.success or THEME.danger
+toastLabel.Text = message
+toastLabel.TextColor3 = color
+toastStroke.Color = color
+toast.Visible = true
+toast.Position = UDim2.new(0.5, 0, 1, 24)
+tween(toast, 0.3, { Position = UDim2.new(0.5, 0, 1, -30), BackgroundTransparency = 0.05 }, Enum.EasingStyle.Quint)
+tween(toastLabel, 0.2, { TextTransparency = 0 })
+tween(toastStroke, 0.2, { Transparency = 0.35 })
+task.delay(3.2, function()
+if token ~= toastToken then
+return
 end
-
----------------------------------------------------------------------
--- Create page: settings card
----------------------------------------------------------------------
+tween(toast, 0.22, { Position = UDim2.new(0.5, 0, 1, 24), BackgroundTransparency = 1 })
+tween(toastLabel, 0.2, { TextTransparency = 1 })
+tween(toastStroke, 0.2, { Transparency = 1 })
+task.delay(0.25, function()
+if token == toastToken then
+toast.Visible = false
+end
+end)
+end)
+end
 local form = new("Frame", {
-	Size = UDim2.fromOffset(350, 356),
-	BackgroundColor3 = THEME.surface,
-	BorderSizePixel = 0,
+Size = UDim2.fromOffset(350, 356),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
 }, createPage)
 corner(form, 12)
 stroke(form, THEME.line, 0.5, 1)
-
 local function sectionTitle(parent, text, y)
-	return textLabel(parent, text, {
-		Position = UDim2.fromOffset(16, y),
-		Size = UDim2.new(1, -32, 0, 16),
-		Font = Enum.Font.GothamBold,
-		TextSize = 12,
-		TextColor3 = THEME.muted,
-	})
+return textLabel(parent, text, {
+Position = UDim2.fromOffset(16, y),
+Size = UDim2.new(1, -32, 0, 16),
+Font = Enum.Font.GothamBold,
+TextSize = 12,
+TextColor3 = THEME.muted,
+})
 end
-
 sectionTitle(form, "NAME", 12)
 local counter = textLabel(form, "0/" .. CONFIG.MaxNameLength, {
-	Position = UDim2.fromOffset(16, 12),
-	Size = UDim2.new(1, -32, 0, 16),
-	TextSize = 11,
-	TextColor3 = THEME.muted,
-	TextXAlignment = Enum.TextXAlignment.Right,
+Position = UDim2.fromOffset(16, 12),
+Size = UDim2.new(1, -32, 0, 16),
+TextSize = 11,
+TextColor3 = THEME.muted,
+TextXAlignment = Enum.TextXAlignment.Right,
 })
-
 local nameBox = new("TextBox", {
-	Position = UDim2.fromOffset(16, 32),
-	Size = UDim2.fromOffset(318, 42),
-	BackgroundColor3 = THEME.field,
-	BorderSizePixel = 0,
-	ClearTextOnFocus = false,
-	PlaceholderText = "Type your name...",
-	PlaceholderColor3 = THEME.muted,
-	Text = "",
-	TextColor3 = THEME.text,
-	TextSize = 17,
-	Font = Enum.Font.GothamBold,
-	TextXAlignment = Enum.TextXAlignment.Center,
+Position = UDim2.fromOffset(16, 32),
+Size = UDim2.fromOffset(318, 42),
+BackgroundColor3 = THEME.field,
+BorderSizePixel = 0,
+ClearTextOnFocus = false,
+PlaceholderText = "Type your name...",
+PlaceholderColor3 = THEME.muted,
+Text = "",
+TextColor3 = THEME.text,
+TextSize = 17,
+Font = Enum.Font.GothamBold,
+TextXAlignment = Enum.TextXAlignment.Center,
 }, form)
 corner(nameBox, 10)
 local nameStroke = stroke(nameBox, THEME.line, 0.35, 1)
 nameBox.Focused:Connect(function()
-	tween(nameStroke, 0.18, { Color = THEME.accent, Transparency = 0 })
+tween(nameStroke, 0.18, { Color = THEME.accent, Transparency = 0 })
 end)
 nameBox.FocusLost:Connect(function()
-	tween(nameStroke, 0.18, { Color = THEME.line, Transparency = 0.35 })
+tween(nameStroke, 0.18, { Color = THEME.line, Transparency = 0.35 })
 end)
-
 sectionTitle(form, "LETTER COLOR", 88)
 local swatchGrid = new("Frame", {
-	Position = UDim2.fromOffset(16, 108),
-	Size = UDim2.fromOffset(318, 59),
-	BackgroundTransparency = 1,
+Position = UDim2.fromOffset(16, 108),
+Size = UDim2.fromOffset(318, 59),
+BackgroundTransparency = 1,
 }, form)
 new("UIGridLayout", {
-	CellSize = UDim2.fromOffset(44, 26),
-	CellPadding = UDim2.fromOffset(10, 7),
-	HorizontalAlignment = Enum.HorizontalAlignment.Center,
-	SortOrder = Enum.SortOrder.LayoutOrder,
+CellSize = UDim2.fromOffset(44, 26),
+CellPadding = UDim2.fromOffset(10, 7),
+HorizontalAlignment = Enum.HorizontalAlignment.Center,
+SortOrder = Enum.SortOrder.LayoutOrder,
 }, swatchGrid)
-
 sectionTitle(form, "MATERIAL", 178)
 local styleRow = new("Frame", {
-	Position = UDim2.fromOffset(16, 198),
-	Size = UDim2.fromOffset(318, 30),
-	BackgroundTransparency = 1,
+Position = UDim2.fromOffset(16, 198),
+Size = UDim2.fromOffset(318, 30),
+BackgroundTransparency = 1,
 }, form)
 new("UIGridLayout", {
-	CellSize = UDim2.fromOffset(58, 30),
-	CellPadding = UDim2.fromOffset(7, 0),
-	HorizontalAlignment = Enum.HorizontalAlignment.Center,
-	SortOrder = Enum.SortOrder.LayoutOrder,
+CellSize = UDim2.fromOffset(58, 30),
+CellPadding = UDim2.fromOffset(7, 0),
+HorizontalAlignment = Enum.HorizontalAlignment.Center,
+SortOrder = Enum.SortOrder.LayoutOrder,
 }, styleRow)
-
 sectionTitle(form, "FONT", 240)
 local fontRow = new("ScrollingFrame", {
-	Position = UDim2.fromOffset(16, 260),
-	Size = UDim2.fromOffset(318, 30),
-	BackgroundTransparency = 1,
-	BorderSizePixel = 0,
-	ScrollBarThickness = 0,
-	CanvasSize = UDim2.new(),
-	AutomaticCanvasSize = Enum.AutomaticSize.X,
-	ScrollingDirection = Enum.ScrollingDirection.X,
+Position = UDim2.fromOffset(16, 260),
+Size = UDim2.fromOffset(318, 30),
+BackgroundTransparency = 1,
+BorderSizePixel = 0,
+ScrollBarThickness = 0,
+CanvasSize = UDim2.new(),
+AutomaticCanvasSize = Enum.AutomaticSize.X,
+ScrollingDirection = Enum.ScrollingDirection.X,
 }, form)
 new("UIListLayout", {
-	FillDirection = Enum.FillDirection.Horizontal,
-	Padding = UDim.new(0, 7),
-	SortOrder = Enum.SortOrder.LayoutOrder,
+FillDirection = Enum.FillDirection.Horizontal,
+Padding = UDim.new(0, 7),
+SortOrder = Enum.SortOrder.LayoutOrder,
 }, fontRow)
-
 local createButton = makeButton(form, {
-	Text = "CREATE 3D NAME",
-	Position = UDim2.fromOffset(16, 302),
-	Size = UDim2.fromOffset(318, 46),
-	TextSize = 14,
-	Font = Enum.Font.GothamBlack,
-	TextColor3 = THEME.dark,
+Text = "CREATE 3D NAME",
+Position = UDim2.fromOffset(16, 302),
+Size = UDim2.fromOffset(318, 46),
+TextSize = 14,
+Font = Enum.Font.GothamBlack,
+TextColor3 = THEME.dark,
 }, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 11 })
-
----------------------------------------------------------------------
--- Create page: preview card
----------------------------------------------------------------------
 local previewCard = new("Frame", {
-	Position = UDim2.fromOffset(362, 0),
-	Size = UDim2.fromOffset(226, 356),
-	BackgroundColor3 = THEME.surface,
-	BorderSizePixel = 0,
+Position = UDim2.fromOffset(362, 0),
+Size = UDim2.fromOffset(226, 356),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
 }, createPage)
 corner(previewCard, 12)
 stroke(previewCard, THEME.line, 0.5, 1)
-
 textLabel(previewCard, "PREVIEW", {
-	Position = UDim2.fromOffset(14, 12),
-	Size = UDim2.new(1, -28, 0, 16),
-	Font = Enum.Font.GothamBold,
-	TextSize = 12,
-	TextColor3 = THEME.muted,
+Position = UDim2.fromOffset(14, 12),
+Size = UDim2.new(1, -28, 0, 16),
+Font = Enum.Font.GothamBold,
+TextSize = 12,
+TextColor3 = THEME.muted,
 })
-
 local stage = new("Frame", {
-	Position = UDim2.fromOffset(12, 34),
-	Size = UDim2.fromOffset(202, 190),
-	BackgroundColor3 = Color3.new(1, 1, 1),
-	BorderSizePixel = 0,
-	ClipsDescendants = true,
+Position = UDim2.fromOffset(12, 34),
+Size = UDim2.fromOffset(202, 190),
+BackgroundColor3 = Color3.new(1, 1, 1),
+BorderSizePixel = 0,
+ClipsDescendants = true,
 }, previewCard)
 corner(stage, 10)
 new("UIGradient", {
-	Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 45, 62)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(16, 18, 26)),
-	}),
-	Rotation = 90,
+Color = ColorSequence.new({
+ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 45, 62)),
+ColorSequenceKeypoint.new(1, Color3.fromRGB(16, 18, 26)),
+}),
+Rotation = 90,
 }, stage)
 stroke(stage, THEME.line, 0.55, 1)
-
 new("Frame", {
-	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -26),
-	Size = UDim2.new(0.76, 0, 0, 1),
-	BackgroundColor3 = THEME.line,
-	BackgroundTransparency = 0.3,
-	BorderSizePixel = 0,
+AnchorPoint = Vector2.new(0.5, 1),
+Position = UDim2.new(0.5, 0, 1, -26),
+Size = UDim2.new(0.76, 0, 0, 1),
+BackgroundColor3 = THEME.line,
+BackgroundTransparency = 0.3,
+BorderSizePixel = 0,
 }, stage)
-
 local previewText = textLabel(stage, "YOUR NAME", {
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.new(0.5, 0, 0.5, -10),
-	Size = UDim2.new(1, -24, 1, -64),
-	Font = Enum.Font.GothamBlack,
-	TextScaled = true,
-	TextWrapped = true,
-	TextXAlignment = Enum.TextXAlignment.Center,
+AnchorPoint = Vector2.new(0.5, 0.5),
+Position = UDim2.new(0.5, 0, 0.5, -10),
+Size = UDim2.new(1, -24, 1, -64),
+Font = Enum.Font.GothamBlack,
+TextScaled = true,
+TextWrapped = true,
+TextXAlignment = Enum.TextXAlignment.Center,
 })
 new("UITextSizeConstraint", { MaxTextSize = 44, MinTextSize = 10 }, previewText)
 local previewStroke = new("UIStroke", {
-	Thickness = 1.5,
-	Color = Color3.fromRGB(8, 8, 12),
-	Transparency = 0.2,
-	ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual,
+Thickness = 1.5,
+Color = Color3.fromRGB(8, 8, 12),
+Transparency = 0.2,
+ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual,
 }, previewText)
 local previewGradient = new("UIGradient", {
-	Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150, 150, 150)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
-	}),
-	Rotation = 90,
-	Enabled = false,
+Color = ColorSequence.new({
+ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150, 150, 150)),
+ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
+}),
+Rotation = 90,
+Enabled = false,
 }, previewText)
-
 local previewDual = new("UIGradient", {
-	Color = ColorSequence.new(Color3.new(1, 1, 1)),
-	Offset = Vector2.new(-1, 0),
-	Enabled = false,
+Color = ColorSequence.new(Color3.new(1, 1, 1)),
+Offset = Vector2.new(-1, 0),
+Enabled = false,
 }, previewText)
 loop(previewDual, 2.2, { Offset = Vector2.new(1, 0) }, Enum.EasingStyle.Linear, false)
-
 local infoStyle = textLabel(previewCard, "", {
-	Position = UDim2.fromOffset(14, 238),
-	Size = UDim2.new(1, -28, 0, 18),
-	TextSize = 12,
+Position = UDim2.fromOffset(14, 238),
+Size = UDim2.new(1, -28, 0, 18),
+TextSize = 12,
 })
 local infoColor = textLabel(previewCard, "", {
-	Position = UDim2.fromOffset(14, 262),
-	Size = UDim2.new(1, -28, 0, 18),
-	TextSize = 12,
+Position = UDim2.fromOffset(14, 262),
+Size = UDim2.new(1, -28, 0, 18),
+TextSize = 12,
 })
 local infoFont = textLabel(previewCard, "", {
-	Position = UDim2.fromOffset(14, 286),
-	Size = UDim2.new(1, -28, 0, 18),
-	TextSize = 12,
+Position = UDim2.fromOffset(14, 286),
+Size = UDim2.new(1, -28, 0, 18),
+TextSize = 12,
 })
 local infoDot = new("Frame", {
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -14, 0, 265),
-	Size = UDim2.fromOffset(12, 12),
-	BackgroundColor3 = Color3.new(1, 1, 1),
-	BorderSizePixel = 0,
+AnchorPoint = Vector2.new(1, 0),
+Position = UDim2.new(1, -14, 0, 265),
+Size = UDim2.fromOffset(12, 12),
+BackgroundColor3 = Color3.new(1, 1, 1),
+BorderSizePixel = 0,
 }, previewCard)
 corner(infoDot, 6)
 stroke(infoDot, THEME.text, 0.6, 1)
-
----------------------------------------------------------------------
--- Selection state
----------------------------------------------------------------------
 local selectedColorIndex = 1
 local selectedColor2Index = 6
 local dualOn = false
@@ -1157,1162 +1001,1056 @@ local refreshDual = nil
 local selectedStyle = "Plastic"
 local selectedFont = fontOf(CONFIG.DefaultFont)
 local swatches = {}
-
 local SIZES = {
-	{ key = "S", title = "Small" },
-	{ key = "M", title = "Medium" },
-	{ key = "L", title = "Large" },
-	{ key = "XL", title = "Huge" },
+{ key = "S", title = "Small" },
+{ key = "M", title = "Medium" },
+{ key = "L", title = "Large" },
+{ key = "XL", title = "Huge" },
 }
 local SIZE_VALUES = { S = 0.6, M = 1, L = 1.6, XL = 2.4 }
 local SPACINGS = {
-	{ key = "T", title = "Tight" },
-	{ key = "N", title = "Normal" },
-	{ key = "W", title = "Wide" },
+{ key = "T", title = "Tight" },
+{ key = "N", title = "Normal" },
+{ key = "W", title = "Wide" },
 }
 local SPACING_VALUES = { T = 0.25, N = 1, W = 2.6 }
 local SHAPES = {
-	{ key = "Straight", title = "Straight" },
-	{ key = "ArcUp", title = "Arc Up" },
-	{ key = "ArcDown", title = "Arc Down" },
-	{ key = "Wave", title = "Wave" },
+{ key = "Straight", title = "Straight" },
+{ key = "ArcUp", title = "Arc Up" },
+{ key = "ArcDown", title = "Arc Down" },
+{ key = "Wave", title = "Wave" },
 }
 local SHAPE_TITLES = { Straight = "Straight", ArcUp = "Arc Up", ArcDown = "Arc Down", Wave = "Wave" }
 local CASES = {
-	{ key = "Normal", title = "As typed" },
-	{ key = "Upper", title = "UPPER" },
-	{ key = "Lower", title = "lower" },
-	{ key = "Title", title = "Title Case" },
+{ key = "Normal", title = "As typed" },
+{ key = "Upper", title = "UPPER" },
+{ key = "Lower", title = "lower" },
+{ key = "Title", title = "Title Case" },
 }
 local EFFECTS = {
-	{ key = "glow", title = "Glow" },
-	{ key = "float", title = "Float" },
-	{ key = "rainbow", title = "Rainbow" },
-	{ key = "sparkles", title = "Sparkles" },
+{ key = "glow", title = "Glow" },
+{ key = "float", title = "Float" },
+{ key = "rainbow", title = "Rainbow" },
+{ key = "sparkles", title = "Sparkles" },
 }
 local FX_TITLES = { glow = "Glow", float = "Float", rainbow = "Rainbow", sparkles = "Sparkles" }
-
 local studio = {
-	size = "M",
-	gap = "N",
-	shape = "Straight",
-	case = "Normal",
-	fx = { glow = false, float = false, rainbow = false, sparkles = false },
+size = "M",
+gap = "N",
+shape = "Straight",
+case = "Normal",
+fx = { glow = false, float = false, rainbow = false, sparkles = false },
 }
-
 local function applyCase(text)
-	if studio.case == "Upper" then
-		return string.upper(text)
-	elseif studio.case == "Lower" then
-		return string.lower(text)
-	elseif studio.case == "Title" then
-		return (string.gsub(string.lower(text), "(%a)([%w']*)", function(first, rest)
-			return string.upper(first) .. rest
-		end))
-	end
-	return text
+if studio.case == "Upper" then
+return string.upper(text)
+elseif studio.case == "Lower" then
+return string.lower(text)
+elseif studio.case == "Title" then
+return (string.gsub(string.lower(text), "(%a)([%w']*)", function(first, rest)
+return string.upper(first) .. rest
+end))
 end
-
+return text
+end
 local function currentFx()
-	local result, any = {}, false
-	for key, value in pairs(studio.fx) do
-		if value then
-			result[key] = true
-			any = true
-		end
-	end
-	return any and result or nil
+local result, any = {}, false
+for key, value in pairs(studio.fx) do
+if value then
+result[key] = true
+any = true
 end
-
+end
+return any and result or nil
+end
 local function selectedColor2()
-	return PALETTE[selectedColor2Index][2]
+return PALETTE[selectedColor2Index][2]
 end
-
 local function selectedColor()
-	return PALETTE[selectedColorIndex][2]
+return PALETTE[selectedColorIndex][2]
 end
-
 local function updatePreview()
-	local color = selectedColor()
-	local text = nameBox.Text ~= "" and applyCase(nameBox.Text) or "YOUR NAME"
-	previewText.Text = text
-	previewText.TextColor3 = color
-	previewText.TextTransparency = 0
-	previewGradient.Enabled = false
-	previewStroke.Color = Color3.fromRGB(8, 8, 12)
-	previewStroke.Thickness = 1.5
-	previewStroke.Transparency = 0.2
-
-	if selectedStyle == "Neon" then
-		previewStroke.Color = color
-		previewStroke.Thickness = 3
-		previewStroke.Transparency = 0.55
-	elseif selectedStyle == "Metal" then
-		previewGradient.Enabled = true
-	elseif selectedStyle == "Glass" then
-		previewText.TextTransparency = 0.3
-		previewStroke.Color = Color3.new(1, 1, 1)
-		previewStroke.Transparency = 0.5
-	elseif selectedStyle == "Modern" then
-		previewText.TextTransparency = 0.88
-		previewStroke.Color = color
-		previewStroke.Thickness = 2
-		previewStroke.Transparency = 0.05
-	end
-
-	if dualOn then
-		local c2 = selectedColor2()
-		previewText.TextColor3 = Color3.new(1, 1, 1)
-		previewGradient.Enabled = false
-		previewDual.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, color),
-			ColorSequenceKeypoint.new(0.5, c2),
-			ColorSequenceKeypoint.new(1, color),
-		})
-		previewDual.Enabled = true
-	else
-		previewDual.Enabled = false
-	end
-
-	infoStyle.Text = "Material: " .. (STYLE_TITLES[selectedStyle] or selectedStyle)
-	if dualOn then
-		infoColor.Text = "Color: " .. PALETTE[selectedColorIndex][1] .. " + " .. PALETTE[selectedColor2Index][1]
-	else
-		infoColor.Text = "Color: " .. PALETTE[selectedColorIndex][1]
-	end
-	if refreshDual then
-		refreshDual()
-	end
-	infoFont.Text = "Font: " .. selectedFont.title
-	infoDot.BackgroundColor3 = color
+local color = selectedColor()
+local text = nameBox.Text ~= "" and applyCase(nameBox.Text) or "YOUR NAME"
+previewText.Text = text
+previewText.TextColor3 = color
+previewText.TextTransparency = 0
+previewGradient.Enabled = false
+previewStroke.Color = Color3.fromRGB(8, 8, 12)
+previewStroke.Thickness = 1.5
+previewStroke.Transparency = 0.2
+if selectedStyle == "Neon" then
+previewStroke.Color = color
+previewStroke.Thickness = 3
+previewStroke.Transparency = 0.55
+elseif selectedStyle == "Metal" then
+previewGradient.Enabled = true
+elseif selectedStyle == "Glass" then
+previewText.TextTransparency = 0.3
+previewStroke.Color = Color3.new(1, 1, 1)
+previewStroke.Transparency = 0.5
+elseif selectedStyle == "Modern" then
+previewText.TextTransparency = 0.88
+previewStroke.Color = color
+previewStroke.Thickness = 2
+previewStroke.Transparency = 0.05
 end
-
+if dualOn then
+local c2 = selectedColor2()
+previewText.TextColor3 = Color3.new(1, 1, 1)
+previewGradient.Enabled = false
+previewDual.Color = ColorSequence.new({
+ColorSequenceKeypoint.new(0, color),
+ColorSequenceKeypoint.new(0.5, c2),
+ColorSequenceKeypoint.new(1, color),
+})
+previewDual.Enabled = true
+else
+previewDual.Enabled = false
+end
+infoStyle.Text = "Material: " .. (STYLE_TITLES[selectedStyle] or selectedStyle)
+if dualOn then
+infoColor.Text = "Color: " .. PALETTE[selectedColorIndex][1] .. " + " .. PALETTE[selectedColor2Index][1]
+else
+infoColor.Text = "Color: " .. PALETTE[selectedColorIndex][1]
+end
+if refreshDual then
+refreshDual()
+end
+infoFont.Text = "Font: " .. selectedFont.title
+infoDot.BackgroundColor3 = color
+end
 for index, item in ipairs(PALETTE) do
-	local swatch = new("TextButton", {
-		BackgroundColor3 = item[2],
-		AutoButtonColor = false,
-		BorderSizePixel = 0,
-		Text = "",
-		LayoutOrder = index,
-	}, swatchGrid)
-	corner(swatch, 8)
-	local ring = stroke(swatch, THEME.accentSoft, 1, 2)
-	swatches[index] = ring
-	local function isChosen()
-		return selectedColorIndex == index or (dualOn and selectedColor2Index == index)
-	end
-	swatch.MouseEnter:Connect(function()
-		if not isChosen() then
-			tween(ring, 0.1, { Transparency = 0.6 })
-		end
-	end)
-	swatch.MouseLeave:Connect(function()
-		if not isChosen() then
-			tween(ring, 0.1, { Transparency = 1 })
-		end
-	end)
-	swatch.Activated:Connect(function()
-		if dualOn and activeSlot == 2 then
-			selectedColor2Index = index
-		else
-			selectedColorIndex = index
-		end
-		updatePreview()
-	end)
+local swatch = new("TextButton", {
+BackgroundColor3 = item[2],
+AutoButtonColor = false,
+BorderSizePixel = 0,
+Text = "",
+LayoutOrder = index,
+}, swatchGrid)
+corner(swatch, 8)
+local ring = stroke(swatch, THEME.accentSoft, 1, 2)
+swatches[index] = ring
+local function isChosen()
+return selectedColorIndex == index or (dualOn and selectedColor2Index == index)
 end
-
+swatch.MouseEnter:Connect(function()
+if not isChosen() then
+tween(ring, 0.1, { Transparency = 0.6 })
+end
+end)
+swatch.MouseLeave:Connect(function()
+if not isChosen() then
+tween(ring, 0.1, { Transparency = 1 })
+end
+end)
+swatch.Activated:Connect(function()
+if dualOn and activeSlot == 2 then
+selectedColor2Index = index
+else
+selectedColorIndex = index
+end
+updatePreview()
+end)
+end
 local dualButton = new("TextButton", {
-	Text = "DUAL",
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -16, 0, 84),
-	Size = UDim2.fromOffset(56, 20),
-	TextSize = 10,
-	Font = Enum.Font.GothamBold,
-	TextColor3 = THEME.text,
-	BackgroundColor3 = THEME.surface2,
-	AutoButtonColor = false,
-	BorderSizePixel = 0,
+Text = "DUAL",
+AnchorPoint = Vector2.new(1, 0),
+Position = UDim2.new(1, -16, 0, 84),
+Size = UDim2.fromOffset(56, 20),
+TextSize = 10,
+Font = Enum.Font.GothamBold,
+TextColor3 = THEME.text,
+BackgroundColor3 = THEME.surface2,
+AutoButtonColor = false,
+BorderSizePixel = 0,
 }, form)
 corner(dualButton, 6)
 stroke(dualButton, THEME.line, 0.4, 1)
-
 local slotButtons = {}
 for slot = 1, 2 do
-	local button = new("TextButton", {
-		Text = tostring(slot),
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -(16 + 56 + 6 + (2 - slot) * 28), 0, 84),
-		Size = UDim2.fromOffset(22, 20),
-		TextSize = 10,
-		Font = Enum.Font.GothamBold,
-		TextColor3 = THEME.text,
-		BackgroundColor3 = THEME.surface2,
-		AutoButtonColor = false,
-		BorderSizePixel = 0,
-		Visible = false,
-	}, form)
-	corner(button, 6)
-	local slotStroke = stroke(button, THEME.accentSoft, 1, 2)
-	slotButtons[slot] = { button = button, stroke = slotStroke }
-	button.Activated:Connect(function()
-		activeSlot = slot
-		updatePreview()
-	end)
-end
-
-refreshDual = function()
-	dualButton.BackgroundColor3 = dualOn and THEME.accent or THEME.surface2
-	dualButton.TextColor3 = dualOn and THEME.dark or THEME.text
-	for slot = 1, 2 do
-		local item = slotButtons[slot]
-		item.button.Visible = dualOn
-		local color = slot == 1 and selectedColor() or selectedColor2()
-		item.button.BackgroundColor3 = color
-		local luma = color.R * 0.3 + color.G * 0.59 + color.B * 0.11
-		item.button.TextColor3 = luma > 0.55 and THEME.dark or THEME.text
-		item.stroke.Transparency = (dualOn and activeSlot == slot) and 0 or 1
-	end
-	for i, ring in ipairs(swatches) do
-		local chosen = selectedColorIndex == i or (dualOn and selectedColor2Index == i)
-		tween(ring, 0.14, { Transparency = chosen and 0 or 1 })
-	end
-end
-
-dualButton.Activated:Connect(function()
-	dualOn = not dualOn
-	activeSlot = 1
-	updatePreview()
+local button = new("TextButton", {
+Text = tostring(slot),
+AnchorPoint = Vector2.new(1, 0),
+Position = UDim2.new(1, -(16 + 56 + 6 + (2 - slot) * 28), 0, 84),
+Size = UDim2.fromOffset(22, 20),
+TextSize = 10,
+Font = Enum.Font.GothamBold,
+TextColor3 = THEME.text,
+BackgroundColor3 = THEME.surface2,
+AutoButtonColor = false,
+BorderSizePixel = 0,
+Visible = false,
+}, form)
+corner(button, 6)
+local slotStroke = stroke(button, THEME.accentSoft, 1, 2)
+slotButtons[slot] = { button = button, stroke = slotStroke }
+button.Activated:Connect(function()
+activeSlot = slot
+updatePreview()
 end)
-
+end
+refreshDual = function()
+dualButton.BackgroundColor3 = dualOn and THEME.accent or THEME.surface2
+dualButton.TextColor3 = dualOn and THEME.dark or THEME.text
+for slot = 1, 2 do
+local item = slotButtons[slot]
+item.button.Visible = dualOn
+local color = slot == 1 and selectedColor() or selectedColor2()
+item.button.BackgroundColor3 = color
+local luma = color.R * 0.3 + color.G * 0.59 + color.B * 0.11
+item.button.TextColor3 = luma > 0.55 and THEME.dark or THEME.text
+item.stroke.Transparency = (dualOn and activeSlot == slot) and 0 or 1
+end
+for i, ring in ipairs(swatches) do
+local chosen = selectedColorIndex == i or (dualOn and selectedColor2Index == i)
+tween(ring, 0.14, { Transparency = chosen and 0 or 1 })
+end
+end
+dualButton.Activated:Connect(function()
+dualOn = not dualOn
+activeSlot = 1
+updatePreview()
+end)
 local chips = {}
 local function setStyle(key)
-	selectedStyle = key
-	for _, chip in ipairs(chips) do
-		local active = chip.key == key
-		tween(chip.button, 0.14, { BackgroundColor3 = active and THEME.accent or THEME.surface2 })
-		chip.button.TextColor3 = active and THEME.dark or THEME.text
-		chip.stroke.Transparency = active and 1 or 0.4
-	end
-	updatePreview()
+selectedStyle = key
+for _, chip in ipairs(chips) do
+local active = chip.key == key
+tween(chip.button, 0.14, { BackgroundColor3 = active and THEME.accent or THEME.surface2 })
+chip.button.TextColor3 = active and THEME.dark or THEME.text
+chip.stroke.Transparency = active and 1 or 0.4
 end
-
+updatePreview()
+end
 for index, item in ipairs(STYLES) do
-	local button = new("TextButton", {
-		Text = item.title,
-		TextSize = 11,
-		Font = Enum.Font.GothamBold,
-		TextColor3 = THEME.text,
-		BackgroundColor3 = THEME.surface2,
-		AutoButtonColor = false,
-		BorderSizePixel = 0,
-		LayoutOrder = index,
-	}, styleRow)
-	corner(button, 8)
-	local chip = { key = item.key, button = button, stroke = stroke(button, THEME.line, 0.4, 1) }
-	table.insert(chips, chip)
-	button.MouseEnter:Connect(function()
-		if selectedStyle ~= chip.key then
-			tween(button, 0.1, { BackgroundColor3 = THEME.line })
-		end
-	end)
-	button.MouseLeave:Connect(function()
-		if selectedStyle ~= chip.key then
-			tween(button, 0.1, { BackgroundColor3 = THEME.surface2 })
-		end
-	end)
-	button.Activated:Connect(function()
-		setStyle(item.key)
-	end)
+local button = new("TextButton", {
+Text = item.title,
+TextSize = 11,
+Font = Enum.Font.GothamBold,
+TextColor3 = THEME.text,
+BackgroundColor3 = THEME.surface2,
+AutoButtonColor = false,
+BorderSizePixel = 0,
+LayoutOrder = index,
+}, styleRow)
+corner(button, 8)
+local chip = { key = item.key, button = button, stroke = stroke(button, THEME.line, 0.4, 1) }
+table.insert(chips, chip)
+button.MouseEnter:Connect(function()
+if selectedStyle ~= chip.key then
+tween(button, 0.1, { BackgroundColor3 = THEME.line })
 end
-
+end)
+button.MouseLeave:Connect(function()
+if selectedStyle ~= chip.key then
+tween(button, 0.1, { BackgroundColor3 = THEME.surface2 })
+end
+end)
+button.Activated:Connect(function()
+setStyle(item.key)
+end)
+end
 local fontChips = {}
 local function setFont(key)
-	selectedFont = fontOf(key)
-	for _, chip in ipairs(fontChips) do
-		local active = chip.key == selectedFont.key
-		tween(chip.button, 0.14, { BackgroundColor3 = active and THEME.accent or THEME.surface2 })
-		chip.button.TextColor3 = active and THEME.dark or THEME.text
-		chip.stroke.Transparency = active and 1 or 0.4
-	end
-	updatePreview()
+selectedFont = fontOf(key)
+for _, chip in ipairs(fontChips) do
+local active = chip.key == selectedFont.key
+tween(chip.button, 0.14, { BackgroundColor3 = active and THEME.accent or THEME.surface2 })
+chip.button.TextColor3 = active and THEME.dark or THEME.text
+chip.stroke.Transparency = active and 1 or 0.4
 end
-
+updatePreview()
+end
 for index, item in ipairs(FONTS) do
-	local button = new("TextButton", {
-		Text = item.title,
-		Size = UDim2.fromOffset(74, 30),
-		TextSize = 10,
-		Font = Enum.Font.GothamBold,
-		TextColor3 = THEME.text,
-		BackgroundColor3 = THEME.surface2,
-		AutoButtonColor = false,
-		BorderSizePixel = 0,
-		LayoutOrder = index,
-	}, fontRow)
-	corner(button, 8)
-	local chip = { key = item.key, button = button, stroke = stroke(button, THEME.line, 0.4, 1) }
-	table.insert(fontChips, chip)
-	button.MouseEnter:Connect(function()
-		if selectedFont.key ~= chip.key then
-			tween(button, 0.1, { BackgroundColor3 = THEME.line })
-		end
-	end)
-	button.MouseLeave:Connect(function()
-		if selectedFont.key ~= chip.key then
-			tween(button, 0.1, { BackgroundColor3 = THEME.surface2 })
-		end
-	end)
-	button.Activated:Connect(function()
-		setFont(item.key)
-	end)
+local button = new("TextButton", {
+Text = item.title,
+Size = UDim2.fromOffset(74, 30),
+TextSize = 10,
+Font = Enum.Font.GothamBold,
+TextColor3 = THEME.text,
+BackgroundColor3 = THEME.surface2,
+AutoButtonColor = false,
+BorderSizePixel = 0,
+LayoutOrder = index,
+}, fontRow)
+corner(button, 8)
+local chip = { key = item.key, button = button, stroke = stroke(button, THEME.line, 0.4, 1) }
+table.insert(fontChips, chip)
+button.MouseEnter:Connect(function()
+if selectedFont.key ~= chip.key then
+tween(button, 0.1, { BackgroundColor3 = THEME.line })
+end
+end)
+button.MouseLeave:Connect(function()
+if selectedFont.key ~= chip.key then
+tween(button, 0.1, { BackgroundColor3 = THEME.surface2 })
+end
+end)
+button.Activated:Connect(function()
+setFont(item.key)
+end)
 end
 setFont(selectedFont.key)
-
 nameBox:GetPropertyChangedSignal("Text"):Connect(function()
-	local text = nameBox.Text
-	local length = utf8.len(text)
-	if length and length > CONFIG.MaxNameLength then
-		local cut = utf8.offset(text, CONFIG.MaxNameLength + 1)
-		if cut then
-			nameBox.Text = string.sub(text, 1, cut - 1)
-			return
-		end
-	end
-	counter.Text = string.format("%d/%d", length or 0, CONFIG.MaxNameLength)
-	updatePreview()
+local text = nameBox.Text
+local length = utf8.len(text)
+if length and length > CONFIG.MaxNameLength then
+local cut = utf8.offset(text, CONFIG.MaxNameLength + 1)
+if cut then
+nameBox.Text = string.sub(text, 1, cut - 1)
+return
+end
+end
+counter.Text = string.format("%d/%d", length or 0, CONFIG.MaxNameLength)
+updatePreview()
 end)
-
----------------------------------------------------------------------
--- Studio page: pro options for the next name
----------------------------------------------------------------------
 local refreshStudio
-
 do -- BLOCK studio
 local studioCard = new("Frame", {
-	Size = UDim2.fromOffset(588, 356),
-	BackgroundColor3 = THEME.surface,
-	BorderSizePixel = 0,
+Size = UDim2.fromOffset(588, 356),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
 }, studioPage)
 corner(studioCard, 12)
 stroke(studioCard, THEME.line, 0.5, 1)
-
 local studioGroups = {}
-
 local function chipGroup(y, items, onPick)
-	local row = new("Frame", {
-		Position = UDim2.fromOffset(16, y),
-		Size = UDim2.new(1, -32, 0, 30),
-		BackgroundTransparency = 1,
-	}, studioCard)
-	new("UIListLayout", {
-		FillDirection = Enum.FillDirection.Horizontal,
-		Padding = UDim.new(0, 8),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-	}, row)
-
-	local group = { chips = {} }
-	group.isActive = function()
-		return false
-	end
-	function group.refresh()
-		for _, chip in ipairs(group.chips) do
-			local active = group.isActive(chip.key)
-			tween(chip.button, 0.14, { BackgroundColor3 = active and THEME.accent or THEME.surface2 })
-			chip.button.TextColor3 = active and THEME.dark or THEME.text
-			chip.stroke.Transparency = active and 1 or 0.4
-		end
-	end
-
-	for index, item in ipairs(items) do
-		local button = new("TextButton", {
-			Text = item.title,
-			Size = UDim2.fromOffset(126, 30),
-			TextSize = 11,
-			Font = Enum.Font.GothamBold,
-			TextColor3 = THEME.text,
-			BackgroundColor3 = THEME.surface2,
-			AutoButtonColor = false,
-			BorderSizePixel = 0,
-			LayoutOrder = index,
-		}, row)
-		corner(button, 8)
-		local chip = { key = item.key, button = button, stroke = stroke(button, THEME.line, 0.4, 1) }
-		table.insert(group.chips, chip)
-		button.MouseEnter:Connect(function()
-			if not group.isActive(chip.key) then
-				tween(button, 0.1, { BackgroundColor3 = THEME.line })
-			end
-		end)
-		button.MouseLeave:Connect(function()
-			if not group.isActive(chip.key) then
-				tween(button, 0.1, { BackgroundColor3 = THEME.surface2 })
-			end
-		end)
-		button.Activated:Connect(function()
-			onPick(chip.key)
-		end)
-	end
-	table.insert(studioGroups, group)
-	return group
+local row = new("Frame", {
+Position = UDim2.fromOffset(16, y),
+Size = UDim2.new(1, -32, 0, 30),
+BackgroundTransparency = 1,
+}, studioCard)
+new("UIListLayout", {
+FillDirection = Enum.FillDirection.Horizontal,
+Padding = UDim.new(0, 8),
+SortOrder = Enum.SortOrder.LayoutOrder,
+}, row)
+local group = { chips = {} }
+group.isActive = function()
+return false
 end
-
+function group.refresh()
+for _, chip in ipairs(group.chips) do
+local active = group.isActive(chip.key)
+tween(chip.button, 0.14, { BackgroundColor3 = active and THEME.accent or THEME.surface2 })
+chip.button.TextColor3 = active and THEME.dark or THEME.text
+chip.stroke.Transparency = active and 1 or 0.4
+end
+end
+for index, item in ipairs(items) do
+local button = new("TextButton", {
+Text = item.title,
+Size = UDim2.fromOffset(126, 30),
+TextSize = 11,
+Font = Enum.Font.GothamBold,
+TextColor3 = THEME.text,
+BackgroundColor3 = THEME.surface2,
+AutoButtonColor = false,
+BorderSizePixel = 0,
+LayoutOrder = index,
+}, row)
+corner(button, 8)
+local chip = { key = item.key, button = button, stroke = stroke(button, THEME.line, 0.4, 1) }
+table.insert(group.chips, chip)
+button.MouseEnter:Connect(function()
+if not group.isActive(chip.key) then
+tween(button, 0.1, { BackgroundColor3 = THEME.line })
+end
+end)
+button.MouseLeave:Connect(function()
+if not group.isActive(chip.key) then
+tween(button, 0.1, { BackgroundColor3 = THEME.surface2 })
+end
+end)
+button.Activated:Connect(function()
+onPick(chip.key)
+end)
+end
+table.insert(studioGroups, group)
+return group
+end
 sectionTitle(studioCard, "SIZE", 12)
 local sizeGroup = chipGroup(32, SIZES, function(key)
-	studio.size = key
-	refreshStudio()
+studio.size = key
+refreshStudio()
 end)
 sizeGroup.isActive = function(key)
-	return studio.size == key
+return studio.size == key
 end
-
 sectionTitle(studioCard, "LETTER SPACING", 76)
 local gapGroup = chipGroup(96, SPACINGS, function(key)
-	studio.gap = key
-	refreshStudio()
+studio.gap = key
+refreshStudio()
 end)
 gapGroup.isActive = function(key)
-	return studio.gap == key
+return studio.gap == key
 end
-
 sectionTitle(studioCard, "SHAPE", 140)
 local shapeGroup = chipGroup(160, SHAPES, function(key)
-	studio.shape = key
-	refreshStudio()
+studio.shape = key
+refreshStudio()
 end)
 shapeGroup.isActive = function(key)
-	return studio.shape == key
+return studio.shape == key
 end
-
 sectionTitle(studioCard, "TEXT CASE", 204)
 local caseGroup = chipGroup(224, CASES, function(key)
-	studio.case = key
-	refreshStudio()
-	updatePreview()
+studio.case = key
+refreshStudio()
+updatePreview()
 end)
 caseGroup.isActive = function(key)
-	return studio.case == key
+return studio.case == key
 end
-
 sectionTitle(studioCard, "EFFECTS (can be combined)", 268)
 local fxGroup = chipGroup(288, EFFECTS, function(key)
-	studio.fx[key] = not studio.fx[key]
-	refreshStudio()
+studio.fx[key] = not studio.fx[key]
+refreshStudio()
 end)
 fxGroup.isActive = function(key)
-	return studio.fx[key] == true
+return studio.fx[key] == true
 end
-
 textLabel(studioCard, "These options apply to the next name you create.", {
-	Position = UDim2.fromOffset(16, 330),
-	Size = UDim2.new(1, -32, 0, 14),
-	TextSize = 10,
-	TextColor3 = THEME.muted,
+Position = UDim2.fromOffset(16, 330),
+Size = UDim2.new(1, -32, 0, 14),
+TextSize = 10,
+TextColor3 = THEME.muted,
 })
-
 local installButton = makeButton(studioCard, {
-	Text = "Install effects script",
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -16, 0, 322),
-	Size = UDim2.fromOffset(170, 26),
-	TextSize = 11,
-	TextColor3 = THEME.accent,
+Text = "Install effects script",
+AnchorPoint = Vector2.new(1, 0),
+Position = UDim2.new(1, -16, 0, 322),
+Size = UDim2.fromOffset(170, 26),
+TextSize = 11,
+TextColor3 = THEME.accent,
 }, { fill = THEME.surface2, stroke = THEME.accent, strokeTransparency = 0.6, radius = 8 })
 installButton.Activated:Connect(function()
-	if H.onInstall then
-		H.onInstall()
-	end
+if H.onInstall then
+H.onInstall()
+end
 end)
-
 refreshStudio = function()
-	for _, group in ipairs(studioGroups) do
-		group.refresh()
-	end
+for _, group in ipairs(studioGroups) do
+group.refresh()
+end
 end
 end -- BLOCK studio
-
----------------------------------------------------------------------
--- 3D engine (letters loaded from asset IDs)
----------------------------------------------------------------------
 local templates = {}
 local animated = {}
 local packs = {}
-
 local function stripInvisible(model)
-	for _, item in ipairs(model:GetDescendants()) do
-		if item:IsA("BasePart") and item.Transparency >= 0.95 then
-			item:Destroy()
-		end
-	end
+for _, item in ipairs(model:GetDescendants()) do
+if item:IsA("BasePart") and item.Transparency >= 0.95 then
+item:Destroy()
 end
-
+end
+end
 local function toModel(source)
-	local copy = source:Clone()
-	if not copy then
-		return nil
-	end
-	for _, item in ipairs(copy:GetDescendants()) do
-		if item:IsA("LuaSourceContainer") then
-			item:Destroy()
-		end
-	end
-	if copy:IsA("LuaSourceContainer") then
-		copy:Destroy()
-		return nil
-	end
-	if copy:IsA("Model") then
-		copy.PrimaryPart = nil
-		stripInvisible(copy)
-		return copy
-	end
-	local container = Instance.new("Model")
-	container.Name = source.Name
-	if copy:IsA("BasePart") then
-		copy.Parent = container
-		return container
-	end
-	if copy:IsA("Folder") then
-		for _, child in ipairs(copy:GetChildren()) do
-			child.Parent = container
-		end
-		copy:Destroy()
-		stripInvisible(container)
-		return container
-	end
-	copy:Destroy()
-	container:Destroy()
-	return nil
+local copy = source:Clone()
+if not copy then
+return nil
 end
-
+for _, item in ipairs(copy:GetDescendants()) do
+if item:IsA("LuaSourceContainer") then
+item:Destroy()
+end
+end
+if copy:IsA("LuaSourceContainer") then
+copy:Destroy()
+return nil
+end
+if copy:IsA("Model") then
+copy.PrimaryPart = nil
+stripInvisible(copy)
+return copy
+end
+local container = Instance.new("Model")
+container.Name = source.Name
+if copy:IsA("BasePart") then
+copy.Parent = container
+return container
+end
+if copy:IsA("Folder") then
+for _, child in ipairs(copy:GetChildren()) do
+child.Parent = container
+end
+copy:Destroy()
+stripInvisible(container)
+return container
+end
+copy:Destroy()
+container:Destroy()
+return nil
+end
 local NUMBER_WORDS = {
-	zero = "0", one = "1", two = "2", three = "3", four = "4",
-	five = "5", six = "6", seven = "7", eight = "8", nine = "9",
+zero = "0", one = "1", two = "2", three = "3", four = "4",
+five = "5", six = "6", seven = "7", eight = "8", nine = "9",
 }
-
 local function keyFromName(name)
-	local tail = string.match(name, "([^/" .. utf8.char(92) .. "]+)$") or name
-	tail = trim(tail)
-	if #tail == 1 then
-		return tail
-	end
-	local lower = string.lower(tail)
-	if NUMBER_WORDS[lower] then
-		return NUMBER_WORDS[lower]
-	end
-	local digit = string.match(lower, "^number(%d)$") or string.match(lower, "^num(%d)$")
-	return digit
+local tail = string.match(name, "([^/" .. utf8.char(92) .. "]+)$") or name
+tail = trim(tail)
+if #tail == 1 then
+return tail
 end
-
+local lower = string.lower(tail)
+if NUMBER_WORDS[lower] then
+return NUMBER_WORDS[lower]
+end
+local digit = string.match(lower, "^number(%d)$") or string.match(lower, "^num(%d)$")
+return digit
+end
 local function getPackIndex(font)
-	local state = packs[font.key]
-	if not state then
-		state = {}
-		packs[font.key] = state
-	end
-	if state.index then
-		return state.index
-	end
-	if state.failed or not font.packId or font.packId == 0 then
-		return nil
-	end
-	local root = loadObject(font.packId)
-	if not root then
-		state.failed = true
-		return nil
-	end
-	local index = {}
-	local function accept(child)
-		return child:IsA("Model") or child:IsA("BasePart") or child:IsA("Folder")
-	end
-	local function scan(container)
-		for _, child in ipairs(container:GetChildren()) do
-			if accept(child) then
-				local key = keyFromName(child.Name)
-				if key and not index[key] then
-					index[key] = child
-				end
-			end
-		end
-	end
-	scan(root)
-	if next(index) == nil then
-		for _, item in ipairs(root:GetDescendants()) do
-			if accept(item) then
-				local key = keyFromName(item.Name)
-				if key and not index[key] then
-					index[key] = item
-				end
-			end
-		end
-	end
-	if next(index) == nil then
-		state.failed = true
-		return nil
-	end
-	state.index = index
-	return index
+local state = packs[font.key]
+if not state then
+state = {}
+packs[font.key] = state
 end
-
+if state.index then
+return state.index
+end
+if state.failed or not font.packId or font.packId == 0 then
+return nil
+end
+local root = loadObject(font.packId)
+if not root then
+state.failed = true
+return nil
+end
+local index = {}
+local function accept(child)
+return child:IsA("Model") or child:IsA("BasePart") or child:IsA("Folder")
+end
+local function scan(container)
+for _, child in ipairs(container:GetChildren()) do
+if accept(child) then
+local key = keyFromName(child.Name)
+if key and not index[key] then
+index[key] = child
+end
+end
+end
+end
+scan(root)
+if next(index) == nil then
+for _, item in ipairs(root:GetDescendants()) do
+if accept(item) then
+local key = keyFromName(item.Name)
+if key and not index[key] then
+index[key] = item
+end
+end
+end
+end
+if next(index) == nil then
+state.failed = true
+return nil
+end
+state.index = index
+return index
+end
 local function oppositeCase(character)
-	local upper = string.upper(character)
-	if upper ~= character then
-		return upper
-	end
-	return string.lower(character)
+local upper = string.upper(character)
+if upper ~= character then
+return upper
 end
-
+return string.lower(character)
+end
 local function getTemplate(font, character)
-	local cacheKey = font.key .. "|" .. character
-	local cached = templates[cacheKey]
-	if cached then
-		return cached
-	end
-
-	local source = nil
-	local index = getPackIndex(font)
-	if index then
-		source = index[character] or index[oppositeCase(character)]
-	end
-	local ids = font.letterIds or {}
-	if not source then
-		local id = ids[character] or ids[string.upper(character)] or ids[string.lower(character)]
-		if id then
-			source = loadObject(id)
-		end
-	end
-	if not source then
-		if (not font.packId or font.packId == 0) and next(ids) == nil then
-			return nil, 'Font "' .. font.title .. '" has no asset id. Set packId in CONFIG.Fonts.'
-		end
-		return nil, 'Letter "' .. character .. '" is not available in ' .. font.title
-	end
-
-	local model = toModel(source)
-	if not model then
-		return nil, 'Could not read the model for "' .. character .. '"'
-	end
-	model.Name = character
-
-	local pivot = model:GetPivot()
-	model:PivotTo(CFrame.new(pivot.Position))
-	if font.orient then
-		model:PivotTo(
-			CFrame.new(model:GetPivot().Position)
-				* CFrame.Angles(math.rad(font.orient.X), math.rad(font.orient.Y), math.rad(font.orient.Z))
-		)
-	end
-
-	local ok, boxCFrame, size = pcall(function()
-		return model:GetBoundingBox()
-	end)
-	if not ok or size.X <= 0 or size.Y <= 0 then
-		model:Destroy()
-		return nil, 'The model for "' .. character .. '" has no 3D parts'
-	end
-
-	local template = {
-		model = model,
-		center = boxCFrame.Position,
-		pivotPos = model:GetPivot().Position,
-		width = size.X,
-		height = size.Y,
-	}
-	templates[cacheKey] = template
-	return template
+local cacheKey = font.key .. "|" .. character
+local cached = templates[cacheKey]
+if cached then
+return cached
 end
-
+local source = nil
+local index = getPackIndex(font)
+if index then
+source = index[character] or index[oppositeCase(character)]
+end
+local ids = font.letterIds or {}
+if not source then
+local id = ids[character] or ids[string.upper(character)] or ids[string.lower(character)]
+if id then
+source = loadObject(id)
+end
+end
+if not source then
+if (not font.packId or font.packId == 0) and next(ids) == nil then
+return nil, 'Font "' .. font.title .. '" has no asset id. Set packId in CONFIG.Fonts.'
+end
+return nil, 'Letter "' .. character .. '" is not available in ' .. font.title
+end
+local model = toModel(source)
+if not model then
+return nil, 'Could not read the model for "' .. character .. '"'
+end
+model.Name = character
+local pivot = model:GetPivot()
+model:PivotTo(CFrame.new(pivot.Position))
+if font.orient then
+model:PivotTo(
+CFrame.new(model:GetPivot().Position)
+* CFrame.Angles(math.rad(font.orient.X), math.rad(font.orient.Y), math.rad(font.orient.Z))
+)
+end
+local ok, boxCFrame, size = pcall(function()
+return model:GetBoundingBox()
+end)
+if not ok or size.X <= 0 or size.Y <= 0 then
+model:Destroy()
+return nil, 'The model for "' .. character .. '" has no 3D parts'
+end
+local template = {
+model = model,
+center = boxCFrame.Position,
+pivotPos = model:GetPivot().Position,
+width = size.X,
+height = size.Y,
+}
+templates[cacheKey] = template
+return template
+end
 local function paintModel(model, color, style)
-	for _, item in ipairs(model:GetDescendants()) do
-		if item:IsA("BasePart") then
-			item.Anchored = true
-			item.CanCollide = false
-			item.CanTouch = false
-			item.CanQuery = false
-			item.CastShadow = true
-			item.Color = color
-			item.Material = style.material
-			item.Reflectance = style.reflectance
-			item.Transparency = style.transparency
-			if item:IsA("PartOperation") then
-				item.UsePartColor = true
-			elseif item:IsA("MeshPart") then
-				item.TextureID = ""
-			end
-		elseif item:IsA("SurfaceAppearance") then
-			item:Destroy()
-		end
-	end
+for _, item in ipairs(model:GetDescendants()) do
+if item:IsA("BasePart") then
+item.Anchored = true
+item.CanCollide = false
+item.CanTouch = false
+item.CanQuery = false
+item.CastShadow = true
+item.Color = color
+item.Material = style.material
+item.Reflectance = style.reflectance
+item.Transparency = style.transparency
+if item:IsA("PartOperation") then
+item.UsePartColor = true
+elseif item:IsA("MeshPart") then
+item.TextureID = ""
 end
-
+elseif item:IsA("SurfaceAppearance") then
+item:Destroy()
+end
+end
+end
 local function flat(vector)
-	return Vector3.new(vector.X, 0, vector.Z)
+return Vector3.new(vector.X, 0, vector.Z)
 end
-
 local function findSpawnPosition()
-	local spawn = nil
-	pcall(function()
-		spawn = Workspace:FindFirstChildWhichIsA("SpawnLocation", true)
-	end)
-	if spawn then
-		return spawn.Position
-	end
-	return Vector3.new(0, 0.5, 0)
+local spawn = nil
+pcall(function()
+spawn = Workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+end)
+if spawn then
+return spawn.Position
 end
-
+return Vector3.new(0, 0.5, 0)
+end
 local function nextHeight(center, skipEntry)
-	local anchor = findSpawnPosition()
-	local y = anchor.Y + CONFIG.HeightOffset
-	for _, item in ipairs(names) do
-		if item ~= skipEntry and type(item.center) == "table" then
-			local c = Vector3.new(item.center[1], item.center[2], item.center[3])
-			if flat(c - center).Magnitude <= CONFIG.StackRadius and c.Y < anchor.Y + 200 then
-				y = math.max(y, c.Y + (item.h or 6) + 1.5)
-			end
-		end
-	end
-	return y
+local anchor = findSpawnPosition()
+local y = anchor.Y + CONFIG.HeightOffset
+for _, item in ipairs(names) do
+if item ~= skipEntry and type(item.center) == "table" then
+local c = Vector3.new(item.center[1], item.center[2], item.center[3])
+if flat(c - center).Magnitude <= CONFIG.StackRadius and c.Y < anchor.Y + 200 then
+y = math.max(y, c.Y + (item.h or 6) + 1.5)
 end
-
+end
+end
+return y
+end
 local function viewBasis()
-	local camera = Workspace.CurrentCamera
-	if camera then
-		local cf = camera.CFrame
-		local forward = flat(cf.LookVector)
-		if forward.Magnitude < 0.3 then
-			local up = flat(cf.UpVector)
-			if up.Magnitude > 0.05 then
-				forward = up
-			end
-		end
-		if forward.Magnitude < 0.05 then
-			forward = Vector3.new(0, 0, -1)
-		end
-		return cf.Position, cf.LookVector, forward.Unit
-	end
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	if root then
-		local forward = flat(root.CFrame.LookVector)
-		if forward.Magnitude < 0.05 then
-			forward = Vector3.new(0, 0, -1)
-		end
-		return root.Position, root.CFrame.LookVector, forward.Unit
-	end
-	local anchor = findSpawnPosition()
-	return anchor + Vector3.new(0, 10, 40), Vector3.new(0, 0, -1), Vector3.new(0, 0, -1)
+local camera = Workspace.CurrentCamera
+if camera then
+local cf = camera.CFrame
+local forward = flat(cf.LookVector)
+if forward.Magnitude < 0.3 then
+local up = flat(cf.UpVector)
+if up.Magnitude > 0.05 then
+forward = up
 end
-
+end
+if forward.Magnitude < 0.05 then
+forward = Vector3.new(0, 0, -1)
+end
+return cf.Position, cf.LookVector, forward.Unit
+end
+local character = player.Character
+local root = character and character:FindFirstChild("HumanoidRootPart")
+if root then
+local forward = flat(root.CFrame.LookVector)
+if forward.Magnitude < 0.05 then
+forward = Vector3.new(0, 0, -1)
+end
+return root.Position, root.CFrame.LookVector, forward.Unit
+end
+local anchor = findSpawnPosition()
+return anchor + Vector3.new(0, 10, 40), Vector3.new(0, 0, -1), Vector3.new(0, 0, -1)
+end
 local function getPlacement(skipEntry)
-	Workspace = game:GetService("Workspace")
-	local position, look, forward = viewBasis()
-	local anchor = findSpawnPosition()
-	local baseY = anchor.Y + CONFIG.HeightOffset
-
-	local point = nil
-	if look.Y < -0.05 then
-		local t = (baseY - position.Y) / look.Y
-		if t > 12 and t <= CONFIG.MaxPlaceDistance then
-			point = position + look * t
-		end
-	end
-	if not point then
-		point = position + forward * CONFIG.PlaceDistance
-	end
-
-	local flatPoint = Vector3.new(point.X, 0, point.Z)
-	local center = Vector3.new(point.X, nextHeight(flatPoint, skipEntry), point.Z)
-
-	local toward = -forward
-	local rotation = CFrame.lookAt(Vector3.zero, toward).Rotation
-	local right = forward:Cross(Vector3.yAxis)
-	return center, rotation, right.Unit
+Workspace = game:GetService("Workspace")
+local position, look, forward = viewBasis()
+local anchor = findSpawnPosition()
+local baseY = anchor.Y + CONFIG.HeightOffset
+local point = nil
+if look.Y < -0.05 then
+local t = (baseY - position.Y) / look.Y
+if t > 12 and t <= CONFIG.MaxPlaceDistance then
+point = position + look * t
 end
-
+end
+if not point then
+point = position + forward * CONFIG.PlaceDistance
+end
+local flatPoint = Vector3.new(point.X, 0, point.Z)
+local center = Vector3.new(point.X, nextHeight(flatPoint, skipEntry), point.Z)
+local toward = -forward
+local rotation = CFrame.lookAt(Vector3.zero, toward).Rotation
+local right = forward:Cross(Vector3.yAxis)
+return center, rotation, right.Unit
+end
 local function storePlacement(entry, center, rotation, right)
-	local comps = { rotation:GetComponents() }
-	entry.center = { center.X, center.Y, center.Z }
-	entry.rot = { table.unpack(comps, 4, 12) }
-	entry.right = { right.X, right.Y, right.Z }
+local comps = { rotation:GetComponents() }
+entry.center = { center.X, center.Y, center.Z }
+entry.rot = { table.unpack(comps, 4, 12) }
+entry.right = { right.X, right.Y, right.Z }
 end
-
 local function modelNameOf(entry)
-	return "DZHUP_" .. entry.id
+return "DZHUP_" .. entry.id
 end
-
----------------------------------------------------------------------
--- Holding names in place: works with NO script at all
----------------------------------------------------------------------
--- Layer 1: Anchored. Layer 2: BodyPosition + BodyGyro saved inside every part, so even if
--- the anchoring were lost after saving, the letters still stay exactly where they are.
 function H.hold(model)
-	if model:GetAttribute("DZ_Phys") == true then
-		return
-	end
-	for _, item in ipairs(model:GetDescendants()) do
-		if item:IsA("BasePart") and item.Name ~= "DZ_SweepOrb" then
-			pcall(function()
-				item.Anchored = true
-				item.CanCollide = false
-				item.CanTouch = false
-				if not item:FindFirstChild("DZ_HoldPos") then
-					local bp = Instance.new("BodyPosition")
-					bp.Name = "DZ_HoldPos"
-					bp.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-					bp.P = 100000
-					bp.D = 2000
-					bp.Position = item.Position
-					bp.Parent = item
-					local bg = Instance.new("BodyGyro")
-					bg.Name = "DZ_HoldRot"
-					bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-					bg.P = 100000
-					bg.D = 2000
-					bg.CFrame = item.CFrame
-					bg.Parent = item
-				end
-			end)
-		end
-	end
+if model:GetAttribute("DZ_Phys") == true then
+return
 end
-
--- Dual color / rainbow without any script: colored sparkles that live on every letter.
--- Particles are saved inside the project and animate by themselves (even in edit mode).
+for _, item in ipairs(model:GetDescendants()) do
+if item:IsA("BasePart") and item.Name ~= "DZ_SweepOrb" then
+pcall(function()
+item.Anchored = true
+item.CanCollide = false
+item.CanTouch = false
+if not item:FindFirstChild("DZ_HoldPos") then
+local bp = Instance.new("BodyPosition")
+bp.Name = "DZ_HoldPos"
+bp.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+bp.P = 100000
+bp.D = 2000
+bp.Position = item.Position
+bp.Parent = item
+local bg = Instance.new("BodyGyro")
+bg.Name = "DZ_HoldRot"
+bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+bg.P = 100000
+bg.D = 2000
+bg.CFrame = item.CFrame
+bg.Parent = item
+end
+end)
+end
+end
+end
 function H.addParticles(group)
-	if group:GetAttribute("DZ_Particles") == true then
-		return
-	end
-	local c1 = group:GetAttribute("DZ_C1")
-	local c2 = group:GetAttribute("DZ_C2")
-	if typeof(c1) ~= "Color3" then
-		return
-	end
-	local seq = nil
-	if group:GetAttribute("DZ_Rainbow") == true then
-		local keys = {}
-		for i = 0, 6 do
-			table.insert(keys, ColorSequenceKeypoint.new(i / 6, Color3.fromHSV(math.min(i / 6, 0.99), 0.75, 1)))
-		end
-		seq = ColorSequence.new(keys)
-	elseif typeof(c2) == "Color3" then
-		seq = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, c1),
-			ColorSequenceKeypoint.new(0.5, c2),
-			ColorSequenceKeypoint.new(1, c1),
-		})
-	else
-		seq = ColorSequence.new(c1, Color3.new(1, 1, 1))
-	end
-	for _, letter in ipairs(group:GetChildren()) do
-		if (letter:IsA("Model") or letter:IsA("BasePart")) and letter.Name ~= "DZ_SweepOrb" then
-			pcall(function()
-				local best, bestVolume = nil, nil
-				for _, item in ipairs(letter:GetDescendants()) do
-					if item:IsA("BasePart") then
-						local volume = item.Size.X * item.Size.Y * item.Size.Z
-						if not bestVolume or volume > bestVolume then
-							best, bestVolume = item, volume
-						end
-					end
-				end
-				if letter:IsA("BasePart") then
-					best = letter
-				end
-				if not best or best:FindFirstChild("DZ_Shimmer") then
-					return
-				end
-				local size = best.Size
-				local dot = math.clamp(math.max(size.X, size.Y) * 0.16, 0.15, 1.2)
-				local emitter = Instance.new("ParticleEmitter")
-				emitter.Name = "DZ_Shimmer"
-				emitter.Color = seq
-				emitter.LightEmission = 0.7
-				emitter.LightInfluence = 0
-				emitter.Lifetime = NumberRange.new(1.2, 2.2)
-				emitter.Rate = math.clamp(size.X * size.Y * 1.5, 6, 70)
-				emitter.Speed = NumberRange.new(0, 0.2)
-				emitter.Rotation = NumberRange.new(0, 360)
-				emitter.RotSpeed = NumberRange.new(-60, 60)
-				emitter.Size = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 0),
-					NumberSequenceKeypoint.new(0.3, dot),
-					NumberSequenceKeypoint.new(1, 0),
-				})
-				emitter.Transparency = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 1),
-					NumberSequenceKeypoint.new(0.2, 0.1),
-					NumberSequenceKeypoint.new(0.8, 0.3),
-					NumberSequenceKeypoint.new(1, 1),
-				})
-				emitter.LockedToPart = true
-				emitter.ZOffset = 0.5
-				pcall(function()
-					emitter.Shape = Enum.ParticleEmitterShape.Box
-					emitter.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
-				end)
-				emitter.Parent = best
-				local sparkle = Instance.new("Sparkles")
-				sparkle.Name = "DZ_Sparkles"
-				sparkle.SparkleColor = typeof(c2) == "Color3" and c2 or Color3.fromHSV(math.random(), 0.7, 1)
-				sparkle.Parent = best
-			end)
-		end
-	end
-	pcall(function()
-		group:SetAttribute("DZ_Particles", true)
-	end)
+if group:GetAttribute("DZ_Particles") == true then
+return
 end
-
--- Float without any script, v7. Every letter part gets three legacy body movers that are
--- saved inside the project (the same kind that already keeps names in place):
---   BodyForce    cancels gravity exactly (each part is normalised to mass 1)
---   BodyPosition a soft undamped spring: the part bobs up and down around its target
---   BodyGyro     keeps the rotation
--- No welds and no constraints are used, so nothing depends on how they are saved.
+local c1 = group:GetAttribute("DZ_C1")
+local c2 = group:GetAttribute("DZ_C2")
+if typeof(c1) ~= "Color3" then
+return
+end
+local seq = nil
+if group:GetAttribute("DZ_Rainbow") == true then
+local keys = {}
+for i = 0, 6 do
+table.insert(keys, ColorSequenceKeypoint.new(i / 6, Color3.fromHSV(math.min(i / 6, 0.99), 0.75, 1)))
+end
+seq = ColorSequence.new(keys)
+elseif typeof(c2) == "Color3" then
+seq = ColorSequence.new({
+ColorSequenceKeypoint.new(0, c1),
+ColorSequenceKeypoint.new(0.5, c2),
+ColorSequenceKeypoint.new(1, c1),
+})
+else
+seq = ColorSequence.new(c1, Color3.new(1, 1, 1))
+end
+for _, letter in ipairs(group:GetChildren()) do
+if (letter:IsA("Model") or letter:IsA("BasePart")) and letter.Name ~= "DZ_SweepOrb" then
+pcall(function()
+local best, bestVolume = nil, nil
+for _, item in ipairs(letter:GetDescendants()) do
+if item:IsA("BasePart") then
+local volume = item.Size.X * item.Size.Y * item.Size.Z
+if not bestVolume or volume > bestVolume then
+best, bestVolume = item, volume
+end
+end
+end
+if letter:IsA("BasePart") then
+best = letter
+end
+if not best or best:FindFirstChild("DZ_Shimmer") then
+return
+end
+local size = best.Size
+local dot = math.clamp(math.max(size.X, size.Y) * 0.16, 0.15, 1.2)
+local emitter = Instance.new("ParticleEmitter")
+emitter.Name = "DZ_Shimmer"
+emitter.Color = seq
+emitter.LightEmission = 0.7
+emitter.LightInfluence = 0
+emitter.Lifetime = NumberRange.new(1.2, 2.2)
+emitter.Rate = math.clamp(size.X * size.Y * 1.5, 6, 70)
+emitter.Speed = NumberRange.new(0, 0.2)
+emitter.Rotation = NumberRange.new(0, 360)
+emitter.RotSpeed = NumberRange.new(-60, 60)
+emitter.Size = NumberSequence.new({
+NumberSequenceKeypoint.new(0, 0),
+NumberSequenceKeypoint.new(0.3, dot),
+NumberSequenceKeypoint.new(1, 0),
+})
+emitter.Transparency = NumberSequence.new({
+NumberSequenceKeypoint.new(0, 1),
+NumberSequenceKeypoint.new(0.2, 0.1),
+NumberSequenceKeypoint.new(0.8, 0.3),
+NumberSequenceKeypoint.new(1, 1),
+})
+emitter.LockedToPart = true
+emitter.ZOffset = 0.5
+pcall(function()
+emitter.Shape = Enum.ParticleEmitterShape.Box
+emitter.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+end)
+emitter.Parent = best
+local sparkle = Instance.new("Sparkles")
+sparkle.Name = "DZ_Sparkles"
+sparkle.SparkleColor = typeof(c2) == "Color3" and c2 or Color3.fromHSV(math.random(), 0.7, 1)
+sparkle.Parent = best
+end)
+end
+end
+pcall(function()
+group:SetAttribute("DZ_Particles", true)
+end)
+end
 function H.floatPhysics(group, amp)
-	if group:GetAttribute("DZ_PhysV") == 7 then
-		return true
-	end
-	amp = math.clamp(amp or 0.35, 0.1, 3)
-	local ok, err = pcall(function()
-		-- remove everything an older float version put in this name
-		for _, item in ipairs(group:GetDescendants()) do
-			local n = item.Name
-			if n == "DZ_FloatAnchor" or n == "DZ_Weld" or n == "DZ_AntiGravity" or n == "DZ_FloatBody"
-				or n == "DZ_FloatTop" or n == "DZ_FloatSlider" or n == "DZ_FloatSpring" or n == "DZ_HoldPos"
-				or n == "DZ_HoldRot" or n == "DZ_FloatPos" or n == "DZ_Lift" then
-				item:Destroy()
-			end
-		end
-		local gravity = game:GetService("Workspace").Gravity
-		local omega = 1.4
-		local count = 0
-		for _, item in ipairs(group:GetDescendants()) do
-			if item:IsA("BasePart") and item.Name ~= "DZ_SweepOrb" then
-				count += 1
-				-- normalise the mass to 1 so the spring is the same for every part
-				pcall(function()
-					local mass = item:GetMass()
-					if mass > 0 then
-						local base = PhysicalProperties.new(item.Material).Density
-						local density = math.clamp(base / mass, 0.01, 100)
-						item.CustomPhysicalProperties = PhysicalProperties.new(density, 0.3, 0.5, 1, 1)
-					end
-				end)
-				local mass = math.max(item:GetMass(), 0.001)
-				item.CanCollide = false
-				item.CanTouch = false
-
-				local lift = Instance.new("BodyForce")
-				lift.Name = "DZ_Lift"
-				lift.Force = Vector3.new(0, mass * gravity, 0)
-				lift.Parent = item
-
-				local spring = Instance.new("BodyPosition")
-				spring.Name = "DZ_FloatPos"
-				spring.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-				spring.P = omega * omega
-				spring.D = 0
-				spring.Position = item.Position - Vector3.new(0, amp, 0)
-				spring.Parent = item
-
-				local gyro = Instance.new("BodyGyro")
-				gyro.Name = "DZ_HoldRot"
-				gyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-				gyro.P = 100000
-				gyro.D = 2000
-				gyro.CFrame = item.CFrame
-				gyro.Parent = item
-
-				item.Anchored = false
-			end
-		end
-		if count == 0 then
-			error("no parts")
-		end
-		group:SetAttribute("DZ_Phys", true)
-		group:SetAttribute("DZ_PhysV", 7)
-	end)
-	if not ok then
-		warn("[DZHUP] Float physics failed: " .. tostring(err))
-	end
-	return ok
+if group:GetAttribute("DZ_PhysV") == 7 then
+return true
 end
-
--- Dual color without any script: a small invisible orb carrying a light of the SECOND color
--- sweeps back and forth along the name (same spring trick), tinting the letters as it passes.
+amp = math.clamp(amp or 0.35, 0.1, 3)
+local ok, err = pcall(function()
+for _, item in ipairs(group:GetDescendants()) do
+local n = item.Name
+if n == "DZ_FloatAnchor" or n == "DZ_Weld" or n == "DZ_AntiGravity" or n == "DZ_FloatBody"
+or n == "DZ_FloatTop" or n == "DZ_FloatSlider" or n == "DZ_FloatSpring" or n == "DZ_HoldPos"
+or n == "DZ_HoldRot" or n == "DZ_FloatPos" or n == "DZ_Lift" then
+item:Destroy()
+end
+end
+local gravity = game:GetService("Workspace").Gravity
+local omega = 1.4
+local count = 0
+for _, item in ipairs(group:GetDescendants()) do
+if item:IsA("BasePart") and item.Name ~= "DZ_SweepOrb" then
+count += 1
+pcall(function()
+local mass = item:GetMass()
+if mass > 0 then
+local base = PhysicalProperties.new(item.Material).Density
+local density = math.clamp(base / mass, 0.01, 100)
+item.CustomPhysicalProperties = PhysicalProperties.new(density, 0.3, 0.5, 1, 1)
+end
+end)
+local mass = math.max(item:GetMass(), 0.001)
+item.CanCollide = false
+item.CanTouch = false
+local lift = Instance.new("BodyForce")
+lift.Name = "DZ_Lift"
+lift.Force = Vector3.new(0, mass * gravity, 0)
+lift.Parent = item
+local spring = Instance.new("BodyPosition")
+spring.Name = "DZ_FloatPos"
+spring.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+spring.P = omega * omega
+spring.D = 0
+spring.Position = item.Position - Vector3.new(0, amp, 0)
+spring.Parent = item
+local gyro = Instance.new("BodyGyro")
+gyro.Name = "DZ_HoldRot"
+gyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+gyro.P = 100000
+gyro.D = 2000
+gyro.CFrame = item.CFrame
+gyro.Parent = item
+item.Anchored = false
+end
+end
+if count == 0 then
+error("no parts")
+end
+group:SetAttribute("DZ_Phys", true)
+group:SetAttribute("DZ_PhysV", 7)
+end)
+if not ok then
+warn("[DZHUP] Float physics failed: " .. tostring(err))
+end
+return ok
+end
 function H.sweepOrb(group)
-	if group:GetAttribute("DZ_Sweep") == true then
-		return
-	end
-	local c2 = group:GetAttribute("DZ_C2")
-	if typeof(c2) ~= "Color3" or group:GetAttribute("DZ_Rainbow") == true then
-		return
-	end
-	pcall(function()
-		local first, last, minT, maxT = nil, nil, nil, nil
-		for _, letter in ipairs(group:GetChildren()) do
-			local t = letter:GetAttribute("DZ_T")
-			if type(t) == "number" then
-				if not minT or t < minT then
-					minT, first = t, letter
-				end
-				if not maxT or t > maxT then
-					maxT, last = t, letter
-				end
-			end
-		end
-		if not first or not last then
-			return
-		end
-		local a = first:GetPivot().Position
-		local b = last:GetPivot().Position
-		local span = b - a
-		local flatSpan = Vector3.new(span.X, 0, span.Z)
-		local dir = nil
-		if flatSpan.Magnitude > 0.1 then
-			dir = flatSpan.Unit
-		else
-			local root = group.PrimaryPart
-			local r = root and root.CFrame.RightVector or Vector3.xAxis
-			dir = Vector3.new(r.X, 0, r.Z).Unit
-		end
-		local half = flatSpan.Magnitude / 2 + 1.2
-		local center = (a + b) / 2
-		local height = 4
-		pcall(function()
-			height = first:GetExtentsSize().Y
-		end)
-		local normal = dir:Cross(Vector3.yAxis)
-		local camera = game:GetService("Workspace").CurrentCamera
-		if camera and (camera.CFrame.Position - center):Dot(normal) < 0 then
-			normal = -normal
-		end
-		local rest = center + normal * 1.6
-
-		local orb = Instance.new("Part")
-		orb.Name = "DZ_SweepOrb"
-		orb.Shape = Enum.PartType.Ball
-		orb.Size = Vector3.new(0.5, 0.5, 0.5)
-		orb.Transparency = 1
-		orb.CanCollide = false
-		orb.CanTouch = false
-		orb.CanQuery = false
-		orb.CastShadow = false
-		orb.Anchored = false
-		orb.CFrame = CFrame.new(rest - dir * half)
-		local base = PhysicalProperties.new(Enum.Material.Plastic).Density
-		local mass = orb:GetMass()
-		if mass > 0 then
-			orb.CustomPhysicalProperties = PhysicalProperties.new(math.clamp(base / mass, 0.01, 100), 0.3, 0.5, 1, 1)
-		end
-		orb.Parent = group
-
-		local light = Instance.new("PointLight")
-		light.Color = c2
-		light.Brightness = 4
-		light.Range = math.clamp(height * 1.6, 8, 32)
-		light.Shadows = false
-		light.Parent = orb
-
-		local omega = 2.2
-		local lift = Instance.new("BodyForce")
-		lift.Name = "DZ_Lift"
-		lift.Force = Vector3.new(0, math.max(orb:GetMass(), 0.001) * game:GetService("Workspace").Gravity, 0)
-		lift.Parent = orb
-
-		local spring = Instance.new("BodyPosition")
-		spring.Name = "DZ_SweepPos"
-		spring.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-		spring.P = omega * omega
-		spring.D = 0
-		spring.Position = rest
-		spring.Parent = orb
-
-		group:SetAttribute("DZ_Sweep", true)
-	end)
+if group:GetAttribute("DZ_Sweep") == true then
+return
 end
-
--- Brings a name made by an older version up to date without rebuilding it
--- (so manual changes you made to it stay).
+local c2 = group:GetAttribute("DZ_C2")
+if typeof(c2) ~= "Color3" or group:GetAttribute("DZ_Rainbow") == true then
+return
+end
+pcall(function()
+local first, last, minT, maxT = nil, nil, nil, nil
+for _, letter in ipairs(group:GetChildren()) do
+local t = letter:GetAttribute("DZ_T")
+if type(t) == "number" then
+if not minT or t < minT then
+minT, first = t, letter
+end
+if not maxT or t > maxT then
+maxT, last = t, letter
+end
+end
+end
+if not first or not last then
+return
+end
+local a = first:GetPivot().Position
+local b = last:GetPivot().Position
+local span = b - a
+local flatSpan = Vector3.new(span.X, 0, span.Z)
+local dir = nil
+if flatSpan.Magnitude > 0.1 then
+dir = flatSpan.Unit
+else
+local root = group.PrimaryPart
+local r = root and root.CFrame.RightVector or Vector3.xAxis
+dir = Vector3.new(r.X, 0, r.Z).Unit
+end
+local half = flatSpan.Magnitude / 2 + 1.2
+local center = (a + b) / 2
+local height = 4
+pcall(function()
+height = first:GetExtentsSize().Y
+end)
+local normal = dir:Cross(Vector3.yAxis)
+local camera = game:GetService("Workspace").CurrentCamera
+if camera and (camera.CFrame.Position - center):Dot(normal) < 0 then
+normal = -normal
+end
+local rest = center + normal * 1.6
+local orb = Instance.new("Part")
+orb.Name = "DZ_SweepOrb"
+orb.Shape = Enum.PartType.Ball
+orb.Size = Vector3.new(0.5, 0.5, 0.5)
+orb.Transparency = 1
+orb.CanCollide = false
+orb.CanTouch = false
+orb.CanQuery = false
+orb.CastShadow = false
+orb.Anchored = false
+orb.CFrame = CFrame.new(rest - dir * half)
+local base = PhysicalProperties.new(Enum.Material.Plastic).Density
+local mass = orb:GetMass()
+if mass > 0 then
+orb.CustomPhysicalProperties = PhysicalProperties.new(math.clamp(base / mass, 0.01, 100), 0.3, 0.5, 1, 1)
+end
+orb.Parent = group
+local light = Instance.new("PointLight")
+light.Color = c2
+light.Brightness = 4
+light.Range = math.clamp(height * 1.6, 8, 32)
+light.Shadows = false
+light.Parent = orb
+local omega = 2.2
+local lift = Instance.new("BodyForce")
+lift.Name = "DZ_Lift"
+lift.Force = Vector3.new(0, math.max(orb:GetMass(), 0.001) * game:GetService("Workspace").Gravity, 0)
+lift.Parent = orb
+local spring = Instance.new("BodyPosition")
+spring.Name = "DZ_SweepPos"
+spring.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+spring.P = omega * omega
+spring.D = 0
+spring.Position = rest
+spring.Parent = orb
+group:SetAttribute("DZ_Sweep", true)
+end)
+end
 function H.upgrade(group)
-	if group:GetAttribute("DZ_FX") ~= true then
-		return
-	end
-	if group:GetAttribute("DZ_SparkOpt") == true then
-		H.addParticles(group)
-	elseif group:GetAttribute("DZ_Particles") == true then
-		-- sparkles are optional now: remove them from names made by an older version
-		for _, item in ipairs(group:GetDescendants()) do
-			if item.Name == "DZ_Shimmer" or item.Name == "DZ_Sparkles" then
-				item:Destroy()
-			end
-		end
-		pcall(function()
-			group:SetAttribute("DZ_Particles", nil)
-		end)
-	end
-	if group:GetAttribute("DZ_Colors") == true then
-		H.sweepOrb(group)
-	end
-	if group:GetAttribute("DZ_Float") == true and group:GetAttribute("DZ_PhysV") ~= 7 then
-		H.floatPhysics(group, group:GetAttribute("DZ_Amp") or 0.35)
-	end
+if group:GetAttribute("DZ_FX") ~= true then
+return
 end
-
--- A name that already exists in the project (saved earlier) is adopted as it is:
--- it is never deleted or rebuilt, so every manual change you made to it is kept.
+if group:GetAttribute("DZ_SparkOpt") == true then
+H.addParticles(group)
+elseif group:GetAttribute("DZ_Particles") == true then
+for _, item in ipairs(group:GetDescendants()) do
+if item.Name == "DZ_Shimmer" or item.Name == "DZ_Sparkles" then
+item:Destroy()
+end
+end
+pcall(function()
+group:SetAttribute("DZ_Particles", nil)
+end)
+end
+if group:GetAttribute("DZ_Colors") == true then
+H.sweepOrb(group)
+end
+if group:GetAttribute("DZ_Float") == true and group:GetAttribute("DZ_PhysV") ~= 7 then
+H.floatPhysics(group, group:GetAttribute("DZ_Amp") or 0.35)
+end
+end
 function H.adopt(group)
-	if group:GetAttribute("DZ_FX") ~= true then
-		return
-	end
-	local c1 = group:GetAttribute("DZ_C1")
-	local c2 = group:GetAttribute("DZ_C2")
-	if typeof(c1) ~= "Color3" then
-		return
-	end
-	local info = {
-		c1 = c1,
-		c2 = typeof(c2) == "Color3" and c2 or nil,
-		rainbow = group:GetAttribute("DZ_Rainbow") == true,
-		float = group:GetAttribute("DZ_Float") == true and group:GetAttribute("DZ_Phys") ~= true,
-		base = group:GetPivot(),
-		amp = group:GetAttribute("DZ_Amp") or 0.35,
-		phase = group:GetAttribute("DZ_Phase") or 0,
-	}
-	pcall(function()
-		group:SetAttribute("DZ_Base", info.base)
-	end)
-	if group:GetAttribute("DZ_Colors") == true and (info.c2 or info.rainbow) then
-		info.letters = {}
-		for _, letter in ipairs(group:GetChildren()) do
-			local t = letter:GetAttribute("DZ_T")
-			if type(t) == "number" then
-				local parts = {}
-				if letter:IsA("BasePart") then
-					table.insert(parts, letter)
-				end
-				for _, item in ipairs(letter:GetDescendants()) do
-					if item:IsA("BasePart") then
-						table.insert(parts, item)
-					end
-				end
-				table.insert(info.letters, {
-					t = t,
-					parts = parts,
-					light = letter:FindFirstChildWhichIsA("PointLight", true),
-				})
-			end
-		end
-	end
-	animated[group] = info
+if group:GetAttribute("DZ_FX") ~= true then
+return
 end
-
----------------------------------------------------------------------
--- Effects script installer (tries every known method, reports why it fails)
----------------------------------------------------------------------
+local c1 = group:GetAttribute("DZ_C1")
+local c2 = group:GetAttribute("DZ_C2")
+if typeof(c1) ~= "Color3" then
+return
+end
+local info = {
+c1 = c1,
+c2 = typeof(c2) == "Color3" and c2 or nil,
+rainbow = group:GetAttribute("DZ_Rainbow") == true,
+float = group:GetAttribute("DZ_Float") == true and group:GetAttribute("DZ_Phys") ~= true,
+base = group:GetPivot(),
+amp = group:GetAttribute("DZ_Amp") or 0.35,
+phase = group:GetAttribute("DZ_Phase") or 0,
+}
+pcall(function()
+group:SetAttribute("DZ_Base", info.base)
+end)
+if group:GetAttribute("DZ_Colors") == true and (info.c2 or info.rainbow) then
+info.letters = {}
+for _, letter in ipairs(group:GetChildren()) do
+local t = letter:GetAttribute("DZ_T")
+if type(t) == "number" then
+local parts = {}
+if letter:IsA("BasePart") then
+table.insert(parts, letter)
+end
+for _, item in ipairs(letter:GetDescendants()) do
+if item:IsA("BasePart") then
+table.insert(parts, item)
+end
+end
+table.insert(info.letters, {
+t = t,
+parts = parts,
+light = letter:FindFirstChildWhichIsA("PointLight", true),
+})
+end
+end
+end
+animated[group] = info
+end
 do -- BLOCK effectsInstaller
 local EFFECT_VERSION = 7
 local EFFECT_MARK = "DZ HUP | Name Effects"
-
 local EFFECT_SOURCE = [==[
 --[[
 DZ HUP | Name Effects
@@ -2322,1039 +2060,1332 @@ and glow from the data saved inside each name (Workspace > DZHUP_Names).
 ]]
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-
 local FOLDER_NAME = "DZHUP_Names"
 local tracked = {}
-
 local function anchorAll(model)
-	for _, item in ipairs(model:GetDescendants()) do
-		if item:IsA("BasePart") and item.Name ~= "DZ_SweepOrb" then
-			item.Anchored = true
-			item.CanCollide = false
-			item.CanTouch = false
-		end
-	end
+for _, item in ipairs(model:GetDescendants()) do
+if item:IsA("BasePart") and item.Name ~= "DZ_SweepOrb" then
+item.Anchored = true
+item.CanCollide = false
+item.CanTouch = false
 end
-
+end
+end
 local function collect(model)
-	local info = {
-		c1 = model:GetAttribute("DZ_C1"),
-		c2 = model:GetAttribute("DZ_C2"),
-		colors = model:GetAttribute("DZ_Colors") == true,
-		rainbow = model:GetAttribute("DZ_Rainbow") == true,
-		floating = model:GetAttribute("DZ_Float") == true,
-		amp = model:GetAttribute("DZ_Amp") or 0.35,
-		phase = model:GetAttribute("DZ_Phase") or 0,
-		base = model:GetAttribute("DZ_Base"),
-		speed = model:GetAttribute("DZ_Speed") or 0.35,
-		spread = model:GetAttribute("DZ_Spread") or 1,
-		letters = {},
-	}
-	if typeof(info.c1) ~= "Color3" then
-		info.c1 = Color3.new(1, 1, 1)
-	end
-	if typeof(info.c2) ~= "Color3" then
-		info.c2 = nil
-	end
-	if typeof(info.base) ~= "CFrame" then
-		info.base = model:GetPivot()
-	end
-	if info.colors then
-		for _, letter in ipairs(model:GetChildren()) do
-			local t = letter:GetAttribute("DZ_T")
-			if type(t) == "number" then
-				local parts = {}
-				if letter:IsA("BasePart") then
-					parts[#parts + 1] = letter
-				end
-				for _, item in ipairs(letter:GetDescendants()) do
-					if item:IsA("BasePart") then
-						parts[#parts + 1] = item
-					end
-				end
-				info.letters[#info.letters + 1] = {
-					t = t,
-					parts = parts,
-					light = letter:FindFirstChildWhichIsA("PointLight", true),
-				}
-			end
-		end
-	end
-	return info
+local info = {
+c1 = model:GetAttribute("DZ_C1"),
+c2 = model:GetAttribute("DZ_C2"),
+colors = model:GetAttribute("DZ_Colors") == true,
+rainbow = model:GetAttribute("DZ_Rainbow") == true,
+floating = model:GetAttribute("DZ_Float") == true,
+amp = model:GetAttribute("DZ_Amp") or 0.35,
+phase = model:GetAttribute("DZ_Phase") or 0,
+base = model:GetAttribute("DZ_Base"),
+speed = model:GetAttribute("DZ_Speed") or 0.35,
+spread = model:GetAttribute("DZ_Spread") or 1,
+letters = {},
+}
+if typeof(info.c1) ~= "Color3" then
+info.c1 = Color3.new(1, 1, 1)
 end
-
+if typeof(info.c2) ~= "Color3" then
+info.c2 = nil
+end
+if typeof(info.base) ~= "CFrame" then
+info.base = model:GetPivot()
+end
+if info.colors then
+for _, letter in ipairs(model:GetChildren()) do
+local t = letter:GetAttribute("DZ_T")
+if type(t) == "number" then
+local parts = {}
+if letter:IsA("BasePart") then
+parts[#parts + 1] = letter
+end
+for _, item in ipairs(letter:GetDescendants()) do
+if item:IsA("BasePart") then
+parts[#parts + 1] = item
+end
+end
+info.letters[#info.letters + 1] = {
+t = t,
+parts = parts,
+light = letter:FindFirstChildWhichIsA("PointLight", true),
+}
+end
+end
+end
+return info
+end
 local function track(model)
-	if not model:IsA("Model") then
-		return
-	end
-	if model:GetAttribute("DZ_Phys") ~= true then
-		pcall(anchorAll, model)
-	end
-	if not tracked[model] and model:GetAttribute("DZ_FX") == true then
-		local ok, info = pcall(collect, model)
-		if ok then
-			tracked[model] = info
-		end
-	end
+if not model:IsA("Model") then
+return
 end
-
+if model:GetAttribute("DZ_Phys") ~= true then
+pcall(anchorAll, model)
+end
+if not tracked[model] and model:GetAttribute("DZ_FX") == true then
+local ok, info = pcall(collect, model)
+if ok then
+tracked[model] = info
+end
+end
+end
 local function watch(folder)
-	for _, model in ipairs(folder:GetChildren()) do
-		track(model)
-	end
-	folder.ChildAdded:Connect(function(model)
-		task.wait(0.2)
-		track(model)
-	end)
-	task.spawn(function()
-		while folder.Parent do
-			for _, model in ipairs(folder:GetChildren()) do
-				pcall(track, model)
-			end
-			task.wait(2)
-		end
-	end)
+for _, model in ipairs(folder:GetChildren()) do
+track(model)
 end
-
+folder.ChildAdded:Connect(function(model)
+task.wait(0.2)
+track(model)
+end)
+task.spawn(function()
+while folder.Parent do
+for _, model in ipairs(folder:GetChildren()) do
+pcall(track, model)
+end
+task.wait(2)
+end
+end)
+end
 local existing = Workspace:FindFirstChild(FOLDER_NAME)
 if existing then
-	watch(existing)
+watch(existing)
 end
 Workspace.ChildAdded:Connect(function(child)
-	if child.Name == FOLDER_NAME then
-		watch(child)
-	end
+if child.Name == FOLDER_NAME then
+watch(child)
+end
 end)
-
 local last = 0
 RunService.Heartbeat:Connect(function()
-	local now = os.clock()
-	if now - last < 0.05 then
-		return
-	end
-	last = now
-	for model, info in pairs(tracked) do
-		if not model.Parent then
-			tracked[model] = nil
-		else
-			if info.colors then
-				for _, letter in ipairs(info.letters) do
-					local blended = nil
-					if info.rainbow then
-						blended = Color3.fromHSV((letter.t * 0.8 - now * 0.12) % 1, 0.8, 1)
-					elseif info.c2 then
-						local wave = (math.sin((letter.t * info.spread - now * info.speed) * math.pi * 2) + 1) / 2
-						blended = info.c1:Lerp(info.c2, wave)
-					end
-					if blended then
-						for _, part in ipairs(letter.parts) do
-							part.Color = blended
-						end
-						if letter.light then
-							letter.light.Color = blended
-						end
-					end
-				end
-			end
-			if info.floating and model:GetAttribute("DZ_Phys") ~= true then
-				model:PivotTo(info.base + Vector3.new(0, math.sin(now * 1.4 + info.phase) * info.amp, 0))
-			end
-		end
-	end
+local now = os.clock()
+if now - last < 0.05 then
+return
+end
+last = now
+for model, info in pairs(tracked) do
+if not model.Parent then
+tracked[model] = nil
+else
+if info.colors then
+for _, letter in ipairs(info.letters) do
+local blended = nil
+if info.rainbow then
+blended = Color3.fromHSV((letter.t * 0.8 - now * 0.12) % 1, 0.8, 1)
+elseif info.c2 then
+local wave = (math.sin((letter.t * info.spread - now * info.speed) * math.pi * 2) + 1) / 2
+blended = info.c1:Lerp(info.c2, wave)
+end
+if blended then
+for _, part in ipairs(letter.parts) do
+part.Color = blended
+end
+if letter.light then
+letter.light.Color = blended
+end
+end
+end
+end
+if info.floating and model:GetAttribute("DZ_Phys") ~= true then
+model:PivotTo(info.base + Vector3.new(0, math.sin(now * 1.4 + info.phase) * info.amp, 0))
+end
+end
+end
 end)
 ]==]
-
 local log = {}
 local function note(text)
-	table.insert(log, text)
+table.insert(log, text)
 end
-
 local function elevate(level)
-	local names_ = { "setthreadidentity", "set_thread_identity", "setidentity", "set_identity", "setthreadcontext", "set_thread_context" }
-	for _, key in ipairs(names_) do
-		local fn = genv[key] or _G[key]
-		if type(fn) == "function" and pcall(fn, level) then
-			return true
-		end
-	end
-	local syn = genv.syn
-	if type(syn) == "table" and type(syn.set_thread_identity) == "function" and pcall(syn.set_thread_identity, level) then
-		return true
-	end
-	return false
+local names_ = { "setthreadidentity", "set_thread_identity", "setidentity", "set_identity", "setthreadcontext", "set_thread_context" }
+for _, key in ipairs(names_) do
+local fn = genv[key] or _G[key]
+if type(fn) == "function" and pcall(fn, level) then
+return true
 end
-
+end
+local syn = genv.syn
+if type(syn) == "table" and type(syn.set_thread_identity) == "function" and pcall(syn.set_thread_identity, level) then
+return true
+end
+return false
+end
 local function findExisting()
-	local sss = game:GetService("ServerScriptService")
-	local found = sss:FindFirstChild("DZHUP_Effects") or Workspace:FindFirstChild("DZHUP_Effects")
-	return found
+local sss = game:GetService("ServerScriptService")
+local found = sss:FindFirstChild("DZHUP_Effects") or Workspace:FindFirstChild("DZHUP_Effects")
+return found
 end
-
 local function needsInstall()
-	local existing = findExisting()
-	if not existing then
-		return true
-	end
-	local version = 0
-	pcall(function()
-		version = existing:GetAttribute("DZ_Version") or 0
-	end)
-	return version < EFFECT_VERSION
+local existing = findExisting()
+if not existing then
+return true
 end
-
--- returns true, "verified" | "unverified"  or  false
+local version = 0
+pcall(function()
+version = existing:GetAttribute("DZ_Version") or 0
+end)
+return version < EFFECT_VERSION
+end
 local function writeSource(target)
-	local methods = {
-		{ "direct", function()
-			target.Source = EFFECT_SOURCE
-		end },
-		{ "setscriptable", function()
-			if type(setscriptable) ~= "function" then
-				error("setscriptable not available")
-			end
-			setscriptable(target, "Source", true)
-			target.Source = EFFECT_SOURCE
-		end },
-		{ "sethiddenproperty", function()
-			if type(sethiddenproperty) ~= "function" then
-				error("sethiddenproperty not available")
-			end
-			sethiddenproperty(target, "Source", EFFECT_SOURCE)
-		end },
-		{ "ScriptEditorService", function()
-			game:GetService("ScriptEditorService"):UpdateSourceAsync(target, function()
-				return EFFECT_SOURCE
-			end)
-		end },
-		{ "ScriptDocument", function()
-			local service = game:GetService("ScriptEditorService")
-			local doc = service:FindScriptDocument(target)
-			if not doc then
-				service:OpenScriptDocumentAsync(target)
-				doc = service:FindScriptDocument(target)
-			end
-			if not doc then
-				error("no script document")
-			end
-			doc:EditTextAsync(EFFECT_SOURCE, 1, 1, 1, 1)
-		end },
-	}
-	local unverified = false
-	for _, level in ipairs({ 8, 5, 4, 2 }) do
-		elevate(level)
-		for _, method in ipairs(methods) do
-			local ok, err = pcall(method[2])
-			if not ok then
-				note(string.format("[id %d] %s: %s", level, method[1], tostring(err)))
-			end
-			local readOk, back = pcall(function()
-				return target.Source
-			end)
-			if readOk and type(back) == "string" and string.find(back, EFFECT_MARK, 1, true) then
-				return true, "verified"
-			end
-			if ok and not (readOk and type(back) == "string" and #back > 0) then
-				unverified = true
-			end
-		end
-	end
-	if unverified then
-		return true, "unverified"
-	end
-	return false
+local methods = {
+{ "direct", function()
+target.Source = EFFECT_SOURCE
+end },
+{ "setscriptable", function()
+if type(setscriptable) ~= "function" then
+error("setscriptable not available")
 end
-
+setscriptable(target, "Source", true)
+target.Source = EFFECT_SOURCE
+end },
+{ "sethiddenproperty", function()
+if type(sethiddenproperty) ~= "function" then
+error("sethiddenproperty not available")
+end
+sethiddenproperty(target, "Source", EFFECT_SOURCE)
+end },
+{ "ScriptEditorService", function()
+game:GetService("ScriptEditorService"):UpdateSourceAsync(target, function()
+return EFFECT_SOURCE
+end)
+end },
+{ "ScriptDocument", function()
+local service = game:GetService("ScriptEditorService")
+local doc = service:FindScriptDocument(target)
+if not doc then
+service:OpenScriptDocumentAsync(target)
+doc = service:FindScriptDocument(target)
+end
+if not doc then
+error("no script document")
+end
+doc:EditTextAsync(EFFECT_SOURCE, 1, 1, 1, 1)
+end },
+}
+local unverified = false
+for _, level in ipairs({ 8, 5, 4, 2 }) do
+elevate(level)
+for _, method in ipairs(methods) do
+local ok, err = pcall(method[2])
+if not ok then
+note(string.format("[id %d] %s: %s", level, method[1], tostring(err)))
+end
+local readOk, back = pcall(function()
+return target.Source
+end)
+if readOk and type(back) == "string" and string.find(back, EFFECT_MARK, 1, true) then
+return true, "verified"
+end
+if ok and not (readOk and type(back) == "string" and #back > 0) then
+unverified = true
+end
+end
+end
+if unverified then
+return true, "unverified"
+end
+return false
+end
 local function install()
-	log = {}
-	local target = findExisting()
-	local created = false
-	if not target then
-		for _, parent in ipairs({ game:GetService("ServerScriptService"), Workspace }) do
-			local ok, made = pcall(function()
-				local s = Instance.new("Script")
-				s.Name = "DZHUP_Effects"
-				s.Parent = parent
-				return s
-			end)
-			if ok and made and made.Parent == parent then
-				target = made
-				created = true
-				break
-			end
-			note("create in " .. parent.Name .. ": " .. tostring(made))
-			if ok and made then
-				pcall(function()
-					made:Destroy()
-				end)
-			end
-		end
-	end
-	if not target then
-		return false
-	end
-	local ok, how = writeSource(target)
-	if ok then
-		pcall(function()
-			target.Enabled = true
-			target:SetAttribute("DZ_Version", EFFECT_VERSION)
-		end)
-		return true, how
-	end
-	if created then
-		pcall(function()
-			target:Destroy()
-		end)
-	end
-	return false
+log = {}
+local target = findExisting()
+local created = false
+if not target then
+for _, parent in ipairs({ game:GetService("ServerScriptService"), Workspace }) do
+local ok, made = pcall(function()
+local s = Instance.new("Script")
+s.Name = "DZHUP_Effects"
+s.Parent = parent
+return s
+end)
+if ok and made and made.Parent == parent then
+target = made
+created = true
+break
 end
-
+note("create in " .. parent.Name .. ": " .. tostring(made))
+if ok and made then
+pcall(function()
+made:Destroy()
+end)
+end
+end
+end
+if not target then
+return false
+end
+local ok, how = writeSource(target)
+if ok then
+pcall(function()
+target.Enabled = true
+target:SetAttribute("DZ_Version", EFFECT_VERSION)
+end)
+return true, how
+end
+if created then
+pcall(function()
+target:Destroy()
+end)
+end
+return false
+end
 local failedOnce = false
 function H.ensureEffects(silent, force)
-	if not force and not needsInstall() then
-		return true, "Effects script is already installed"
-	end
-	local ok, how = install()
-	if ok then
-		if not silent then
-			print("[DZHUP] Effects script installed (" .. tostring(how) .. ") in " .. tostring(findExisting() and findExisting().Parent and findExisting().Parent.Name))
-		end
-		if how == "unverified" then
-			return true, "Effects script written (could not read it back to verify)"
-		end
-		return true, "Effects script installed"
-	end
-	if not failedOnce or force then
-		failedOnce = true
-		warn("[DZHUP] This editor blocks writing code into a Script. Why:")
-		for _, line in ipairs(log) do
-			warn("[DZHUP]   " .. line)
-		end
-		warn("[DZHUP] Names are still held in place (anchored + body movers) and colors are saved in the letters. Only live animation in Play mode needs the script.")
-		if force then
-			copyText(EFFECT_SOURCE)
-		end
-	end
-	return false, "Editor blocks scripts. Names stay in place; animation only runs from the executor."
+if not force and not needsInstall() then
+return true, "Effects script is already installed"
 end
-
+local ok, how = install()
+if ok then
+if not silent then
+print("[DZHUP] Effects script installed (" .. tostring(how) .. ") in " .. tostring(findExisting() and findExisting().Parent and findExisting().Parent.Name))
+end
+if how == "unverified" then
+return true, "Effects script written (could not read it back to verify)"
+end
+return true, "Effects script installed"
+end
+if not failedOnce or force then
+failedOnce = true
+warn("[DZHUP] This editor blocks writing code into a Script. Why:")
+for _, line in ipairs(log) do
+warn("[DZHUP]   " .. line)
+end
+warn("[DZHUP] Names are still held in place (anchored + body movers) and colors are saved in the letters. Only live animation in Play mode needs the script.")
+if force then
+copyText(EFFECT_SOURCE)
+end
+end
+return false, "Editor blocks scripts. Names stay in place; animation only runs from the executor."
+end
 function H.onInstall()
-	task.spawn(function()
-		local ok, message = H.ensureEffects(false, true)
-		showToast(message, ok)
-	end)
+task.spawn(function()
+local ok, message = H.ensureEffects(false, true)
+showToast(message, ok)
+end)
 end
 end -- BLOCK effectsInstaller
-
 local function buildName(entry)
-	local font = fontOf(entry.font)
-	local style = STYLE_DEFS[entry.style] or STYLE_DEFS.Plastic
-	local color = Color3.fromRGB(entry.color[1], entry.color[2], entry.color[3])
-	local color2 = nil
-	if type(entry.color2) == "table" then
-		color2 = Color3.fromRGB(entry.color2[1], entry.color2[2], entry.color2[3])
-	end
-	local scale = type(entry.size) == "number" and math.clamp(entry.size, 0.2, 6) or 1
-	local gapMul = type(entry.gap) == "number" and math.clamp(entry.gap, 0, 6) or 1
-	local shape = entry.shape or "Straight"
-	local fx = type(entry.fx) == "table" and entry.fx or {}
-	local colorAnim = color2 ~= nil or fx.rainbow == true
-
-	local center = Vector3.new(entry.center[1], entry.center[2], entry.center[3])
-	local rotation = CFrame.new(0, 0, 0, table.unpack(entry.rot))
-	local normal = rotation.LookVector
-	local right = Vector3.new(entry.right[1], entry.right[2], entry.right[3])
-	local frontNegZ = font.frontNegZ
-	if frontNegZ == nil then
-		frontNegZ = CONFIG.FrontFaceIsNegativeZ
-	end
-	if not frontNegZ then
-		rotation = rotation * CFrame.Angles(0, math.pi, 0)
-	end
-
-	local pieces = {}
-	local letterCount, widthSum, maxHeight = 0, 0, 1
-	for _, codepoint in utf8.codes(entry.name) do
-		local character = utf8.char(codepoint)
-		if string.match(character, "^%s$") then
-			table.insert(pieces, { space = true })
-		else
-			local template, templateError = getTemplate(font, character)
-			if not template then
-				return nil, templateError
-			end
-			table.insert(pieces, { template = template })
-			letterCount += 1
-			widthSum += template.width * scale
-			maxHeight = math.max(maxHeight, template.height * scale)
-		end
-	end
-
-	local gap = CONFIG.LetterGap * gapMul * scale
-	local spaceWidth = letterCount > 0 and (widthSum / letterCount) * CONFIG.SpaceWidthRatio or 1
-	local totalWidth = -gap
-	for _, piece in ipairs(pieces) do
-		piece.width = piece.template and piece.template.width * scale or spaceWidth
-		totalWidth += piece.width + gap
-	end
-
-	local arcAngle = math.min(math.rad(110), totalWidth / (maxHeight * 3))
-	local radius = arcAngle > 0.01 and totalWidth / arcAngle or nil
-	local function shapeAt(xc)
-		if (shape == "ArcUp" or shape == "ArcDown") and radius then
-			local phi = xc / radius
-			local sign = shape == "ArcUp" and 1 or -1
-			return radius * math.sin(phi), sign * (radius * math.cos(phi) - radius), -sign * phi
-		elseif shape == "Wave" then
-			local amp = maxHeight * 0.28
-			local k = (math.pi * 2 * 1.5) / math.max(totalWidth, 0.01)
-			return xc, amp * math.sin(k * xc), math.atan(amp * k * math.cos(k * xc))
-		end
-		return xc, 0, 0
-	end
-
-	local group = Instance.new("Model")
-	group.Name = modelNameOf(entry)
-
-	local cursor = -totalWidth / 2
-	local firstPart = nil
-	local waveLetters = {}
-	for _, piece in ipairs(pieces) do
-		local template = piece.template
-		if template then
-			local letter = template.model:Clone()
-			local appliedScale = 1
-			if scale ~= 1 then
-				if pcall(function()
-					letter:ScaleTo(scale)
-				end) then
-					appliedScale = scale
-				end
-			end
-			paintModel(letter, color, style)
-
-			local xc = cursor + piece.width / 2
-			local dx, dy, roll = shapeAt(xc)
-			local rollCF = CFrame.fromAxisAngle(normal, roll)
-			local up = rollCF:VectorToWorldSpace(Vector3.yAxis)
-			local scaledCenter = template.pivotPos + (template.center - template.pivotPos) * appliedScale
-			local target = center + right * dx + Vector3.yAxis * dy + up * (template.height * appliedScale / 2)
-			local placement = CFrame.new(target) * rollCF * rotation * CFrame.new(-scaledCenter)
-			letter:PivotTo(placement * letter:GetPivot())
-
-			letter.Name = template.model.Name
-			letter.Parent = group
-
-			local light = nil
-			if fx.glow then
-				local anchorPart = letter:FindFirstChildWhichIsA("BasePart", true)
-				if anchorPart then
-					light = Instance.new("PointLight")
-					light.Color = color
-					light.Brightness = 2
-					light.Range = math.clamp(10 * scale, 6, 30)
-					light.Shadows = false
-					light.Parent = anchorPart
-				end
-			end
-
-			if colorAnim then
-				local parts = {}
-				for _, item in ipairs(letter:GetDescendants()) do
-					if item:IsA("BasePart") then
-						table.insert(parts, item)
-					end
-				end
-				local t = totalWidth > 0 and (xc + totalWidth / 2) / totalWidth or 0
-				pcall(function()
-					letter:SetAttribute("DZ_T", t)
-				end)
-				-- bake the color into the letter itself (saved with the project, no script needed)
-				local staticColor = nil
-				if fx.rainbow then
-					staticColor = Color3.fromHSV((t * 0.8) % 1, 0.8, 1)
-				elseif color2 then
-					local w = (math.sin(t * CONFIG.WaveSpread * math.pi * 2) + 1) / 2
-					staticColor = color:Lerp(color2, w)
-				end
-				if staticColor then
-					for _, part in ipairs(parts) do
-						part.Color = staticColor
-					end
-					if light then
-						light.Color = staticColor
-					end
-				end
-				table.insert(waveLetters, { parts = parts, t = t, light = light })
-			end
-			firstPart = firstPart or letter:FindFirstChildWhichIsA("BasePart", true)
-		end
-		cursor += piece.width + gap
-	end
-
-	if not firstPart then
-		group:Destroy()
-		return nil, "No letters could be created"
-	end
-
-	if entry.style == "Modern" then
-		local highlight = Instance.new("Highlight")
-		highlight.Name = "ModernEdge"
-		highlight.Adornee = group
-		highlight.FillTransparency = 1
-		highlight.OutlineColor = color
-		highlight.OutlineTransparency = 0.2
-		highlight.DepthMode = Enum.HighlightDepthMode.Occluded
-		highlight.Parent = group
-	end
-
-	group.PrimaryPart = firstPart
-	group.Parent = H.getFolder()
-	H.hold(group)
-	pcall(function()
-		local _, size = group:GetBoundingBox()
-		entry.h = size.Y
-	end)
-	if colorAnim or fx.float or fx.sparkles then
-		local fxBase = group:GetPivot()
-		local fxAmp = 0.35 * math.max(scale, 0.6)
-		local fxPhase = math.random() * math.pi * 2
-		pcall(function()
-			group:SetAttribute("DZ_FX", true)
-			group:SetAttribute("DZ_C1", color)
-			if color2 then
-				group:SetAttribute("DZ_C2", color2)
-			end
-			group:SetAttribute("DZ_Colors", colorAnim)
-			group:SetAttribute("DZ_Rainbow", fx.rainbow == true)
-			group:SetAttribute("DZ_Float", fx.float == true)
-			group:SetAttribute("DZ_Amp", fxAmp)
-			group:SetAttribute("DZ_Phase", fxPhase)
-			group:SetAttribute("DZ_Base", fxBase)
-			group:SetAttribute("DZ_Speed", CONFIG.WaveSpeed)
-			group:SetAttribute("DZ_Spread", CONFIG.WaveSpread)
-		end)
-		if fx.sparkles then
-			pcall(function()
-				group:SetAttribute("DZ_SparkOpt", true)
-			end)
-			H.addParticles(group)
-		end
-		if colorAnim then
-			H.sweepOrb(group)
-		end
-		local physOk = false
-		if fx.float then
-			physOk = H.floatPhysics(group, fxAmp) == true
-		end
-		animated[group] = {
-			c1 = color,
-			c2 = color2,
-			rainbow = fx.rainbow == true,
-			letters = colorAnim and waveLetters or nil,
-			float = fx.float == true and not physOk,
-			base = fxBase,
-			amp = fxAmp,
-			phase = fxPhase,
-		}
-	end
-	return group
+local font = fontOf(entry.font)
+local style = STYLE_DEFS[entry.style] or STYLE_DEFS.Plastic
+local color = Color3.fromRGB(entry.color[1], entry.color[2], entry.color[3])
+local color2 = nil
+if type(entry.color2) == "table" then
+color2 = Color3.fromRGB(entry.color2[1], entry.color2[2], entry.color2[3])
 end
-
----------------------------------------------------------------------
--- Animations: flowing dual color, rainbow and floating names
----------------------------------------------------------------------
+local scale = type(entry.size) == "number" and math.clamp(entry.size, 0.2, 6) or 1
+local gapMul = type(entry.gap) == "number" and math.clamp(entry.gap, 0, 6) or 1
+local shape = entry.shape or "Straight"
+local fx = type(entry.fx) == "table" and entry.fx or {}
+local colorAnim = color2 ~= nil or fx.rainbow == true
+local center = Vector3.new(entry.center[1], entry.center[2], entry.center[3])
+local rotation = CFrame.new(0, 0, 0, table.unpack(entry.rot))
+local normal = rotation.LookVector
+local right = Vector3.new(entry.right[1], entry.right[2], entry.right[3])
+local frontNegZ = font.frontNegZ
+if frontNegZ == nil then
+frontNegZ = CONFIG.FrontFaceIsNegativeZ
+end
+if not frontNegZ then
+rotation = rotation * CFrame.Angles(0, math.pi, 0)
+end
+local pieces = {}
+local letterCount, widthSum, maxHeight = 0, 0, 1
+for _, codepoint in utf8.codes(entry.name) do
+local character = utf8.char(codepoint)
+if string.match(character, "^%s$") then
+table.insert(pieces, { space = true })
+else
+local template, templateError = getTemplate(font, character)
+if not template then
+return nil, templateError
+end
+table.insert(pieces, { template = template })
+letterCount += 1
+widthSum += template.width * scale
+maxHeight = math.max(maxHeight, template.height * scale)
+end
+end
+local gap = CONFIG.LetterGap * gapMul * scale
+local spaceWidth = letterCount > 0 and (widthSum / letterCount) * CONFIG.SpaceWidthRatio or 1
+local totalWidth = -gap
+for _, piece in ipairs(pieces) do
+piece.width = piece.template and piece.template.width * scale or spaceWidth
+totalWidth += piece.width + gap
+end
+local arcAngle = math.min(math.rad(110), totalWidth / (maxHeight * 3))
+local radius = arcAngle > 0.01 and totalWidth / arcAngle or nil
+local function shapeAt(xc)
+if (shape == "ArcUp" or shape == "ArcDown") and radius then
+local phi = xc / radius
+local sign = shape == "ArcUp" and 1 or -1
+return radius * math.sin(phi), sign * (radius * math.cos(phi) - radius), -sign * phi
+elseif shape == "Wave" then
+local amp = maxHeight * 0.28
+local k = (math.pi * 2 * 1.5) / math.max(totalWidth, 0.01)
+return xc, amp * math.sin(k * xc), math.atan(amp * k * math.cos(k * xc))
+end
+return xc, 0, 0
+end
+local group = Instance.new("Model")
+group.Name = modelNameOf(entry)
+local cursor = -totalWidth / 2
+local firstPart = nil
+local waveLetters = {}
+for _, piece in ipairs(pieces) do
+local template = piece.template
+if template then
+local letter = template.model:Clone()
+local appliedScale = 1
+if scale ~= 1 then
+if pcall(function()
+letter:ScaleTo(scale)
+end) then
+appliedScale = scale
+end
+end
+paintModel(letter, color, style)
+local xc = cursor + piece.width / 2
+local dx, dy, roll = shapeAt(xc)
+local rollCF = CFrame.fromAxisAngle(normal, roll)
+local up = rollCF:VectorToWorldSpace(Vector3.yAxis)
+local scaledCenter = template.pivotPos + (template.center - template.pivotPos) * appliedScale
+local target = center + right * dx + Vector3.yAxis * dy + up * (template.height * appliedScale / 2)
+local placement = CFrame.new(target) * rollCF * rotation * CFrame.new(-scaledCenter)
+letter:PivotTo(placement * letter:GetPivot())
+letter.Name = template.model.Name
+letter.Parent = group
+local light = nil
+if fx.glow then
+local anchorPart = letter:FindFirstChildWhichIsA("BasePart", true)
+if anchorPart then
+light = Instance.new("PointLight")
+light.Color = color
+light.Brightness = 2
+light.Range = math.clamp(10 * scale, 6, 30)
+light.Shadows = false
+light.Parent = anchorPart
+end
+end
+if colorAnim then
+local parts = {}
+for _, item in ipairs(letter:GetDescendants()) do
+if item:IsA("BasePart") then
+table.insert(parts, item)
+end
+end
+local t = totalWidth > 0 and (xc + totalWidth / 2) / totalWidth or 0
+pcall(function()
+letter:SetAttribute("DZ_T", t)
+end)
+local staticColor = nil
+if fx.rainbow then
+staticColor = Color3.fromHSV((t * 0.8) % 1, 0.8, 1)
+elseif color2 then
+local w = (math.sin(t * CONFIG.WaveSpread * math.pi * 2) + 1) / 2
+staticColor = color:Lerp(color2, w)
+end
+if staticColor then
+for _, part in ipairs(parts) do
+part.Color = staticColor
+end
+if light then
+light.Color = staticColor
+end
+end
+table.insert(waveLetters, { parts = parts, t = t, light = light })
+end
+firstPart = firstPart or letter:FindFirstChildWhichIsA("BasePart", true)
+end
+cursor += piece.width + gap
+end
+if not firstPart then
+group:Destroy()
+return nil, "No letters could be created"
+end
+if entry.style == "Modern" then
+local highlight = Instance.new("Highlight")
+highlight.Name = "ModernEdge"
+highlight.Adornee = group
+highlight.FillTransparency = 1
+highlight.OutlineColor = color
+highlight.OutlineTransparency = 0.2
+highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+highlight.Parent = group
+end
+group.PrimaryPart = firstPart
+group.Parent = H.getFolder()
+H.hold(group)
+pcall(function()
+local _, size = group:GetBoundingBox()
+entry.h = size.Y
+end)
+if colorAnim or fx.float or fx.sparkles then
+local fxBase = group:GetPivot()
+local fxAmp = 0.35 * math.max(scale, 0.6)
+local fxPhase = math.random() * math.pi * 2
+pcall(function()
+group:SetAttribute("DZ_FX", true)
+group:SetAttribute("DZ_C1", color)
+if color2 then
+group:SetAttribute("DZ_C2", color2)
+end
+group:SetAttribute("DZ_Colors", colorAnim)
+group:SetAttribute("DZ_Rainbow", fx.rainbow == true)
+group:SetAttribute("DZ_Float", fx.float == true)
+group:SetAttribute("DZ_Amp", fxAmp)
+group:SetAttribute("DZ_Phase", fxPhase)
+group:SetAttribute("DZ_Base", fxBase)
+group:SetAttribute("DZ_Speed", CONFIG.WaveSpeed)
+group:SetAttribute("DZ_Spread", CONFIG.WaveSpread)
+end)
+if fx.sparkles then
+pcall(function()
+group:SetAttribute("DZ_SparkOpt", true)
+end)
+H.addParticles(group)
+end
+if colorAnim then
+H.sweepOrb(group)
+end
+local physOk = false
+if fx.float then
+physOk = H.floatPhysics(group, fxAmp) == true
+end
+animated[group] = {
+c1 = color,
+c2 = color2,
+rainbow = fx.rainbow == true,
+letters = colorAnim and waveLetters or nil,
+float = fx.float == true and not physOk,
+base = fxBase,
+amp = fxAmp,
+phase = fxPhase,
+}
+end
+return group
+end
 do -- BLOCK heartbeat
 local lastWave = 0
 on(RunService.Heartbeat, function()
-	local now = os.clock()
-	if now - lastWave < 0.033 then
-		return
-	end
-	lastWave = now
-	for group, info in pairs(animated) do
-		if not group.Parent then
-			animated[group] = nil
-		else
-			if info.letters then
-				for _, letter in ipairs(info.letters) do
-					local blended
-					if info.rainbow then
-						blended = Color3.fromHSV((letter.t * 0.8 - now * 0.12) % 1, 0.8, 1)
-					else
-						local wave = (math.sin((letter.t * CONFIG.WaveSpread - now * CONFIG.WaveSpeed) * math.pi * 2) + 1) / 2
-						blended = info.c1:Lerp(info.c2, wave)
-					end
-					for _, part in ipairs(letter.parts) do
-						part.Color = blended
-					end
-					if letter.light then
-						letter.light.Color = blended
-					end
-				end
-			end
-			if info.float then
-				group:PivotTo(info.base + Vector3.new(0, math.sin(now * 1.4 + info.phase) * info.amp, 0))
-			end
-		end
-	end
+local now = os.clock()
+if now - lastWave < 0.033 then
+return
+end
+lastWave = now
+for group, info in pairs(animated) do
+if not group.Parent then
+animated[group] = nil
+else
+if info.letters then
+for _, letter in ipairs(info.letters) do
+local blended
+if info.rainbow then
+blended = Color3.fromHSV((letter.t * 0.8 - now * 0.12) % 1, 0.8, 1)
+else
+local wave = (math.sin((letter.t * CONFIG.WaveSpread - now * CONFIG.WaveSpeed) * math.pi * 2) + 1) / 2
+blended = info.c1:Lerp(info.c2, wave)
+end
+for _, part in ipairs(letter.parts) do
+part.Color = blended
+end
+if letter.light then
+letter.light.Color = blended
+end
+end
+end
+if info.float then
+group:PivotTo(info.base + Vector3.new(0, math.sin(now * 1.4 + info.phase) * info.amp, 0))
+end
+end
+end
 end)
 end -- BLOCK heartbeat
-
----------------------------------------------------------------------
--- My Names page
----------------------------------------------------------------------
 local renderList
-
 do -- BLOCK mynames
 textLabel(listPage, "Saved names", {
-	Position = UDim2.fromOffset(4, 0),
-	Size = UDim2.new(1, -8, 0, 22),
-	Font = Enum.Font.GothamBold,
-	TextSize = 14,
+Position = UDim2.fromOffset(4, 0),
+Size = UDim2.new(1, -8, 0, 22),
+Font = Enum.Font.GothamBold,
+TextSize = 14,
 })
 local listCount = textLabel(listPage, "", {
-	Position = UDim2.fromOffset(4, 0),
-	Size = UDim2.new(1, -8, 0, 22),
-	TextSize = 12,
-	TextColor3 = THEME.muted,
-	TextXAlignment = Enum.TextXAlignment.Right,
+Position = UDim2.fromOffset(4, 0),
+Size = UDim2.new(1, -8, 0, 22),
+TextSize = 12,
+TextColor3 = THEME.muted,
+TextXAlignment = Enum.TextXAlignment.Right,
 })
-
 local listFrame = new("ScrollingFrame", {
-	Position = UDim2.fromOffset(0, 28),
-	Size = UDim2.new(1, 0, 1, -28),
-	BackgroundColor3 = THEME.surface,
-	BorderSizePixel = 0,
-	ScrollBarThickness = 3,
-	ScrollBarImageColor3 = THEME.muted,
-	CanvasSize = UDim2.new(),
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	ScrollingDirection = Enum.ScrollingDirection.Y,
+Position = UDim2.fromOffset(0, 28),
+Size = UDim2.new(1, 0, 1, -28),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
+ScrollBarThickness = 3,
+ScrollBarImageColor3 = THEME.muted,
+CanvasSize = UDim2.new(),
+AutomaticCanvasSize = Enum.AutomaticSize.Y,
+ScrollingDirection = Enum.ScrollingDirection.Y,
 }, listPage)
 corner(listFrame, 12)
 stroke(listFrame, THEME.line, 0.5, 1)
 new("UIPadding", {
-	PaddingTop = UDim.new(0, 8),
-	PaddingBottom = UDim.new(0, 8),
-	PaddingLeft = UDim.new(0, 8),
-	PaddingRight = UDim.new(0, 10),
+PaddingTop = UDim.new(0, 8),
+PaddingBottom = UDim.new(0, 8),
+PaddingLeft = UDim.new(0, 8),
+PaddingRight = UDim.new(0, 10),
 }, listFrame)
 new("UIListLayout", { Padding = UDim.new(0, 7), SortOrder = Enum.SortOrder.LayoutOrder }, listFrame)
-
 local emptyState = textLabel(listPage, "No saved names yet" .. utf8.char(10) .. "Create your first one from the Create tab", {
-	Position = UDim2.fromOffset(0, 28),
-	Size = UDim2.new(1, 0, 1, -28),
-	TextSize = 13,
-	TextColor3 = THEME.muted,
-	TextWrapped = true,
-	TextXAlignment = Enum.TextXAlignment.Center,
+Position = UDim2.fromOffset(0, 28),
+Size = UDim2.new(1, 0, 1, -28),
+TextSize = 13,
+TextColor3 = THEME.muted,
+TextWrapped = true,
+TextXAlignment = Enum.TextXAlignment.Center,
 })
-
 local function moveEntry(entry)
-	task.spawn(function()
-		local old = H.getFolder():FindFirstChild(modelNameOf(entry))
-		if old then
-			old:Destroy()
-		end
-		local center, rotation, right = getPlacement(entry)
-		storePlacement(entry, center, rotation, right)
-		local ok, group, err = pcall(buildName, entry)
-		persist()
-		if ok and group then
-			showToast("Moved in front of you", true)
-		else
-			showToast(tostring(ok and err or group or "Could not move the name"), false)
-		end
-	end)
+task.spawn(function()
+local old = H.getFolder():FindFirstChild(modelNameOf(entry))
+if old then
+old:Destroy()
 end
-
+local center, rotation, right = getPlacement(entry)
+storePlacement(entry, center, rotation, right)
+local ok, group, err = pcall(buildName, entry)
+persist()
+if ok and group then
+showToast("Moved in front of you", true)
+else
+showToast(tostring(ok and err or group or "Could not move the name"), false)
+end
+end)
+end
 local function deleteEntry(entry)
-	local old = H.getFolder():FindFirstChild(modelNameOf(entry))
-	if old then
-		old:Destroy()
-	end
-	for i, item in ipairs(names) do
-		if item == entry then
-			table.remove(names, i)
-			break
-		end
-	end
-	persist()
-	renderList()
-	showToast("Name deleted", true)
+local old = H.getFolder():FindFirstChild(modelNameOf(entry))
+if old then
+old:Destroy()
 end
-
+for i, item in ipairs(names) do
+if item == entry then
+table.remove(names, i)
+break
+end
+end
+persist()
+renderList()
+showToast("Name deleted", true)
+end
 function renderList()
-	for _, child in ipairs(listFrame:GetChildren()) do
-		if child:IsA("GuiObject") then
-			child:Destroy()
-		end
-	end
-
-	local sorted = table.clone(names)
-	table.sort(sorted, function(a, b)
-		return (a.order or 0) > (b.order or 0)
-	end)
-
-	H.setTabTitle("names", string.format("Names (%d)", #sorted))
-	listCount.Text = string.format("%d / %d", #sorted, CONFIG.MaxNames)
-	emptyState.Visible = #sorted == 0
-	listFrame.Visible = #sorted > 0
-
-	for index, entry in ipairs(sorted) do
-		local row = new("Frame", {
-			Size = UDim2.new(1, 0, 0, 62),
-			BackgroundColor3 = THEME.surface2,
-			BorderSizePixel = 0,
-			LayoutOrder = index,
-		}, listFrame)
-		corner(row, 10)
-		stroke(row, THEME.line, 0.7, 1)
-
-		local dot = new("Frame", {
-			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.new(0, 14, 0.5, 0),
-			Size = UDim2.fromOffset(32, 32),
-			BackgroundColor3 = Color3.fromRGB(entry.color[1], entry.color[2], entry.color[3]),
-			BorderSizePixel = 0,
-		}, row)
-		corner(dot, 9)
-		stroke(dot, THEME.text, 0.7, 1)
-		if type(entry.color2) == "table" then
-			dot.BackgroundColor3 = Color3.new(1, 1, 1)
-			new("UIGradient", {
-				Color = ColorSequence.new(
-					Color3.fromRGB(entry.color[1], entry.color[2], entry.color[3]),
-					Color3.fromRGB(entry.color2[1], entry.color2[2], entry.color2[3])
-				),
-				Rotation = 45,
-			}, dot)
-		end
-
-		textLabel(row, tostring(entry.name), {
-			Position = UDim2.fromOffset(60, 10),
-			Size = UDim2.new(1, -230, 0, 24),
-			Font = Enum.Font.GothamBold,
-			TextSize = 17,
-			TextTruncate = Enum.TextTruncate.AtEnd,
-		})
-		local details = fontOf(entry.font).title .. "  |  " .. (STYLE_TITLES[entry.style] or "Plastic")
-		if entry.shape and SHAPE_TITLES[entry.shape] then
-			details = details .. "  |  " .. SHAPE_TITLES[entry.shape]
-		end
-		if type(entry.fx) == "table" then
-			for _, item in ipairs(EFFECTS) do
-				if entry.fx[item.key] then
-					details = details .. "  |  " .. FX_TITLES[item.key]
-				end
-			end
-		end
-		textLabel(row, details, {
-			Position = UDim2.fromOffset(60, 35),
-			Size = UDim2.new(1, -230, 0, 16),
-			TextSize = 11,
-			TextColor3 = THEME.muted,
-		})
-
-		local deleteButton = makeButton(row, {
-			Text = "Delete",
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -10, 0.5, 0),
-			Size = UDim2.fromOffset(72, 32),
-			TextSize = 12,
-			TextColor3 = THEME.danger,
-		}, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
-
-		local moveButton = makeButton(row, {
-			Text = "Move here",
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -90, 0.5, 0),
-			Size = UDim2.fromOffset(82, 32),
-			TextSize = 12,
-			TextColor3 = THEME.accent,
-		}, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 8 })
-		moveButton.Activated:Connect(function()
-			moveEntry(entry)
-		end)
-
-		local armed = false
-		deleteButton.Activated:Connect(function()
-			if not armed then
-				armed = true
-				deleteButton.Text = "Confirm?"
-				deleteButton.TextColor3 = THEME.text
-				tween(deleteButton, 0.12, { BackgroundColor3 = THEME.danger })
-				task.delay(2.5, function()
-					if armed and deleteButton.Parent then
-						armed = false
-						deleteButton.Text = "Delete"
-						deleteButton.TextColor3 = THEME.danger
-						tween(deleteButton, 0.12, { BackgroundColor3 = THEME.surface })
-					end
-				end)
-				return
-			end
-			deleteEntry(entry)
-		end)
-	end
+for _, child in ipairs(listFrame:GetChildren()) do
+if child:IsA("GuiObject") then
+child:Destroy()
 end
-
+end
+local sorted = table.clone(names)
+table.sort(sorted, function(a, b)
+return (a.order or 0) > (b.order or 0)
+end)
+H.setTabTitle("names", string.format("Names (%d)", #sorted))
+listCount.Text = string.format("%d / %d", #sorted, CONFIG.MaxNames)
+emptyState.Visible = #sorted == 0
+listFrame.Visible = #sorted > 0
+for index, entry in ipairs(sorted) do
+local row = new("Frame", {
+Size = UDim2.new(1, 0, 0, 62),
+BackgroundColor3 = THEME.surface2,
+BorderSizePixel = 0,
+LayoutOrder = index,
+}, listFrame)
+corner(row, 10)
+stroke(row, THEME.line, 0.7, 1)
+local dot = new("Frame", {
+AnchorPoint = Vector2.new(0, 0.5),
+Position = UDim2.new(0, 14, 0.5, 0),
+Size = UDim2.fromOffset(32, 32),
+BackgroundColor3 = Color3.fromRGB(entry.color[1], entry.color[2], entry.color[3]),
+BorderSizePixel = 0,
+}, row)
+corner(dot, 9)
+stroke(dot, THEME.text, 0.7, 1)
+if type(entry.color2) == "table" then
+dot.BackgroundColor3 = Color3.new(1, 1, 1)
+new("UIGradient", {
+Color = ColorSequence.new(
+Color3.fromRGB(entry.color[1], entry.color[2], entry.color[3]),
+Color3.fromRGB(entry.color2[1], entry.color2[2], entry.color2[3])
+),
+Rotation = 45,
+}, dot)
+end
+textLabel(row, tostring(entry.name), {
+Position = UDim2.fromOffset(60, 10),
+Size = UDim2.new(1, -230, 0, 24),
+Font = Enum.Font.GothamBold,
+TextSize = 17,
+TextTruncate = Enum.TextTruncate.AtEnd,
+})
+local details = fontOf(entry.font).title .. "  |  " .. (STYLE_TITLES[entry.style] or "Plastic")
+if entry.shape and SHAPE_TITLES[entry.shape] then
+details = details .. "  |  " .. SHAPE_TITLES[entry.shape]
+end
+if type(entry.fx) == "table" then
+for _, item in ipairs(EFFECTS) do
+if entry.fx[item.key] then
+details = details .. "  |  " .. FX_TITLES[item.key]
+end
+end
+end
+textLabel(row, details, {
+Position = UDim2.fromOffset(60, 35),
+Size = UDim2.new(1, -230, 0, 16),
+TextSize = 11,
+TextColor3 = THEME.muted,
+})
+local deleteButton = makeButton(row, {
+Text = "Delete",
+AnchorPoint = Vector2.new(1, 0.5),
+Position = UDim2.new(1, -10, 0.5, 0),
+Size = UDim2.fromOffset(72, 32),
+TextSize = 12,
+TextColor3 = THEME.danger,
+}, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
+local moveButton = makeButton(row, {
+Text = "Move here",
+AnchorPoint = Vector2.new(1, 0.5),
+Position = UDim2.new(1, -90, 0.5, 0),
+Size = UDim2.fromOffset(82, 32),
+TextSize = 12,
+TextColor3 = THEME.accent,
+}, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 8 })
+moveButton.Activated:Connect(function()
+moveEntry(entry)
+end)
+local armed = false
+deleteButton.Activated:Connect(function()
+if not armed then
+armed = true
+deleteButton.Text = "Confirm?"
+deleteButton.TextColor3 = THEME.text
+tween(deleteButton, 0.12, { BackgroundColor3 = THEME.danger })
+task.delay(2.5, function()
+if armed and deleteButton.Parent then
+armed = false
+deleteButton.Text = "Delete"
+deleteButton.TextColor3 = THEME.danger
+tween(deleteButton, 0.12, { BackgroundColor3 = THEME.surface })
+end
+end)
+return
+end
+deleteEntry(entry)
+end)
+end
+end
 local clearButton = makeButton(listPage, {
-	Text = "Clear all",
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -62, 0, 0),
-	Size = UDim2.fromOffset(74, 22),
-	TextSize = 11,
-	TextColor3 = THEME.danger,
+Text = "Clear all",
+AnchorPoint = Vector2.new(1, 0),
+Position = UDim2.new(1, -62, 0, 0),
+Size = UDim2.fromOffset(74, 22),
+TextSize = 11,
+TextColor3 = THEME.danger,
 }, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 7 })
 local clearArmed = false
 clearButton.Activated:Connect(function()
-	if #names == 0 then
-		showToast("Nothing to clear", false)
-		return
-	end
-	if not clearArmed then
-		clearArmed = true
-		clearButton.Text = "Confirm?"
-		clearButton.TextColor3 = THEME.text
-		tween(clearButton, 0.12, { BackgroundColor3 = THEME.danger })
-		task.delay(2.5, function()
-			if clearArmed and clearButton.Parent then
-				clearArmed = false
-				clearButton.Text = "Clear all"
-				clearButton.TextColor3 = THEME.danger
-				tween(clearButton, 0.12, { BackgroundColor3 = THEME.surface })
-			end
-		end)
-		return
-	end
-	clearArmed = false
-	clearButton.Text = "Clear all"
-	clearButton.TextColor3 = THEME.danger
-	tween(clearButton, 0.12, { BackgroundColor3 = THEME.surface })
-	for _, item in ipairs(names) do
-		local old = H.getFolder():FindFirstChild(modelNameOf(item))
-		if old then
-			old:Destroy()
-		end
-	end
-	table.clear(names)
-	persist()
-	renderList()
-	showToast("All names deleted", true)
+if #names == 0 then
+showToast("Nothing to clear", false)
+return
+end
+if not clearArmed then
+clearArmed = true
+clearButton.Text = "Confirm?"
+clearButton.TextColor3 = THEME.text
+tween(clearButton, 0.12, { BackgroundColor3 = THEME.danger })
+task.delay(2.5, function()
+if clearArmed and clearButton.Parent then
+clearArmed = false
+clearButton.Text = "Clear all"
+clearButton.TextColor3 = THEME.danger
+tween(clearButton, 0.12, { BackgroundColor3 = THEME.surface })
+end
+end)
+return
+end
+clearArmed = false
+clearButton.Text = "Clear all"
+clearButton.TextColor3 = THEME.danger
+tween(clearButton, 0.12, { BackgroundColor3 = THEME.surface })
+for _, item in ipairs(names) do
+local old = H.getFolder():FindFirstChild(modelNameOf(item))
+if old then
+old:Destroy()
+end
+end
+table.clear(names)
+persist()
+renderList()
+showToast("All names deleted", true)
 end)
 end -- BLOCK mynames
-
----------------------------------------------------------------------
--- Creator page
----------------------------------------------------------------------
 do -- BLOCK creator
 local aboutLeft = new("Frame", {
-	Size = UDim2.fromOffset(240, 356),
-	BackgroundColor3 = THEME.surface,
-	BorderSizePixel = 0,
+Size = UDim2.fromOffset(240, 356),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
 }, aboutPage)
 corner(aboutLeft, 12)
 stroke(aboutLeft, THEME.line, 0.5, 1)
-
 local avatarHolder = new("Frame", {
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 30),
-	Size = UDim2.fromOffset(116, 116),
-	BackgroundTransparency = 1,
+AnchorPoint = Vector2.new(0.5, 0),
+Position = UDim2.new(0.5, 0, 0, 30),
+Size = UDim2.fromOffset(116, 116),
+BackgroundTransparency = 1,
 }, aboutLeft)
-
 local avatarGlow = new("Frame", {
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromOffset(134, 134),
-	BackgroundColor3 = THEME.accent,
-	BackgroundTransparency = 0.86,
-	BorderSizePixel = 0,
+AnchorPoint = Vector2.new(0.5, 0.5),
+Position = UDim2.fromScale(0.5, 0.5),
+Size = UDim2.fromOffset(134, 134),
+BackgroundColor3 = THEME.accent,
+BackgroundTransparency = 0.86,
+BorderSizePixel = 0,
 }, avatarHolder)
 corner(avatarGlow, 100)
 loop(avatarGlow, 1.4, { BackgroundTransparency = 0.62, Size = UDim2.fromOffset(150, 150) })
-
 local avatarRing = new("Frame", {
-	Size = UDim2.fromScale(1, 1),
-	BackgroundColor3 = THEME.surface2,
-	BorderSizePixel = 0,
+Size = UDim2.fromScale(1, 1),
+BackgroundColor3 = THEME.surface2,
+BorderSizePixel = 0,
 }, avatarHolder)
 corner(avatarRing, 100)
 local ringStroke = stroke(avatarRing, Color3.new(1, 1, 1), 0, 3)
 local ringGradient = new("UIGradient", {
-	Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, THEME.accentSoft),
-		ColorSequenceKeypoint.new(0.5, THEME.accent),
-		ColorSequenceKeypoint.new(1, THEME.accentSoft),
-	}),
-	Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0),
-		NumberSequenceKeypoint.new(0.55, 0.85),
-		NumberSequenceKeypoint.new(1, 0),
-	}),
+Color = ColorSequence.new({
+ColorSequenceKeypoint.new(0, THEME.accentSoft),
+ColorSequenceKeypoint.new(0.5, THEME.accent),
+ColorSequenceKeypoint.new(1, THEME.accentSoft),
+}),
+Transparency = NumberSequence.new({
+NumberSequenceKeypoint.new(0, 0),
+NumberSequenceKeypoint.new(0.55, 0.85),
+NumberSequenceKeypoint.new(1, 0),
+}),
 }, ringStroke)
 loop(ringGradient, 3, { Rotation = 360 }, Enum.EasingStyle.Linear, false)
-
 local avatarInner = new("Frame", {
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.new(1, -12, 1, -12),
-	BackgroundColor3 = THEME.header,
-	BorderSizePixel = 0,
-	ClipsDescendants = true,
+AnchorPoint = Vector2.new(0.5, 0.5),
+Position = UDim2.fromScale(0.5, 0.5),
+Size = UDim2.new(1, -12, 1, -12),
+BackgroundColor3 = THEME.header,
+BorderSizePixel = 0,
+ClipsDescendants = true,
 }, avatarRing)
 corner(avatarInner, 100)
 local avatarLetter = textLabel(avatarInner, "R", {
-	Size = UDim2.fromScale(1, 1),
-	Font = Enum.Font.GothamBlack,
-	TextSize = 44,
-	TextColor3 = THEME.accent,
-	TextXAlignment = Enum.TextXAlignment.Center,
+Size = UDim2.fromScale(1, 1),
+Font = Enum.Font.GothamBlack,
+TextSize = 44,
+TextColor3 = THEME.accent,
+TextXAlignment = Enum.TextXAlignment.Center,
 })
 local avatarImage = new("ImageLabel", {
-	Size = UDim2.fromScale(1, 1),
-	BackgroundTransparency = 1,
-	ScaleType = Enum.ScaleType.Crop,
-	Image = "",
-	Visible = false,
+Size = UDim2.fromScale(1, 1),
+BackgroundTransparency = 1,
+ScaleType = Enum.ScaleType.Crop,
+Image = "",
+Visible = false,
 }, avatarInner)
 corner(avatarImage, 100)
-
 textLabel(aboutLeft, CONFIG.Creator, {
-	Position = UDim2.fromOffset(0, 164),
-	Size = UDim2.new(1, 0, 0, 26),
-	Font = Enum.Font.GothamBlack,
-	TextSize = 21,
-	TextXAlignment = Enum.TextXAlignment.Center,
+Position = UDim2.fromOffset(0, 164),
+Size = UDim2.new(1, 0, 0, 26),
+Font = Enum.Font.GothamBlack,
+TextSize = 21,
+TextXAlignment = Enum.TextXAlignment.Center,
 })
 textLabel(aboutLeft, "Creator of this system", {
-	Position = UDim2.fromOffset(0, 192),
-	Size = UDim2.new(1, 0, 0, 16),
-	TextSize = 12,
-	TextColor3 = THEME.muted,
-	TextXAlignment = Enum.TextXAlignment.Center,
+Position = UDim2.fromOffset(0, 192),
+Size = UDim2.new(1, 0, 0, 16),
+TextSize = 12,
+TextColor3 = THEME.muted,
+TextXAlignment = Enum.TextXAlignment.Center,
 })
 local communityPill = new("Frame", {
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 224),
-	Size = UDim2.fromOffset(120, 28),
-	BackgroundColor3 = THEME.surface2,
-	BorderSizePixel = 0,
+AnchorPoint = Vector2.new(0.5, 0),
+Position = UDim2.new(0.5, 0, 0, 224),
+Size = UDim2.fromOffset(120, 28),
+BackgroundColor3 = THEME.surface2,
+BorderSizePixel = 0,
 }, aboutLeft)
 corner(communityPill, 14)
 stroke(communityPill, THEME.accent, 0.55, 1)
 textLabel(communityPill, CONFIG.Community, {
-	Size = UDim2.fromScale(1, 1),
-	Font = Enum.Font.GothamBold,
-	TextSize = 12,
-	TextColor3 = THEME.accent,
-	TextXAlignment = Enum.TextXAlignment.Center,
+Size = UDim2.fromScale(1, 1),
+Font = Enum.Font.GothamBold,
+TextSize = 12,
+TextColor3 = THEME.accent,
+TextXAlignment = Enum.TextXAlignment.Center,
 })
-
 local aboutRight = new("Frame", {
-	Position = UDim2.fromOffset(252, 0),
-	Size = UDim2.fromOffset(336, 356),
-	BackgroundColor3 = THEME.surface,
-	BorderSizePixel = 0,
+Position = UDim2.fromOffset(252, 0),
+Size = UDim2.fromOffset(336, 356),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
 }, aboutPage)
 corner(aboutRight, 12)
 stroke(aboutRight, THEME.line, 0.5, 1)
-
 textLabel(aboutRight, "CONNECT WITH ME", {
-	Position = UDim2.fromOffset(16, 14),
-	Size = UDim2.new(1, -32, 0, 16),
-	Font = Enum.Font.GothamBold,
-	TextSize = 12,
-	TextColor3 = THEME.muted,
+Position = UDim2.fromOffset(16, 14),
+Size = UDim2.new(1, -32, 0, 16),
+Font = Enum.Font.GothamBold,
+TextSize = 12,
+TextColor3 = THEME.muted,
 })
-
 local function copyLink(link, doneMessage)
-	if copyText(link) then
-		showToast(doneMessage, true)
-	else
-		showToast("Clipboard is not supported. " .. link, false)
-	end
+if copyText(link) then
+showToast(doneMessage, true)
+else
+showToast("Clipboard is not supported. " .. link, false)
 end
-
+end
 local function contactCard(y, letter, color, title, sub, link, doneMessage)
-	local button = makeButton(aboutRight, {
-		Text = "",
-		Position = UDim2.fromOffset(16, y),
-		Size = UDim2.fromOffset(304, 68),
-	}, { fill = THEME.surface2, stroke = color, strokeTransparency = 0.6, radius = 12 })
-
-	local icon = new("Frame", {
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 14, 0.5, 0),
-		Size = UDim2.fromOffset(42, 42),
-		BackgroundColor3 = color,
-		BorderSizePixel = 0,
-	}, button)
-	corner(icon, 11)
-	textLabel(icon, letter, {
-		Size = UDim2.fromScale(1, 1),
-		Font = Enum.Font.GothamBlack,
-		TextSize = 18,
-		TextColor3 = Color3.new(1, 1, 1),
-		TextXAlignment = Enum.TextXAlignment.Center,
-	})
-	textLabel(button, title, {
-		Position = UDim2.fromOffset(68, 14),
-		Size = UDim2.new(1, -150, 0, 20),
-		Font = Enum.Font.GothamBold,
-		TextSize = 15,
-	})
-	textLabel(button, sub, {
-		Position = UDim2.fromOffset(68, 36),
-		Size = UDim2.new(1, -150, 0, 16),
-		TextSize = 11,
-		TextColor3 = THEME.muted,
-	})
-	local chip = new("Frame", {
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -12, 0.5, 0),
-		Size = UDim2.fromOffset(60, 26),
-		BackgroundColor3 = color,
-		BackgroundTransparency = 0.75,
-		BorderSizePixel = 0,
-	}, button)
-	corner(chip, 8)
-	textLabel(chip, "COPY", {
-		Size = UDim2.fromScale(1, 1),
-		Font = Enum.Font.GothamBold,
-		TextSize = 11,
-		TextXAlignment = Enum.TextXAlignment.Center,
-	})
-	button.Activated:Connect(function()
-		copyLink(link, doneMessage)
-	end)
+local button = makeButton(aboutRight, {
+Text = "",
+Position = UDim2.fromOffset(16, y),
+Size = UDim2.fromOffset(304, 68),
+}, { fill = THEME.surface2, stroke = color, strokeTransparency = 0.6, radius = 12 })
+local icon = new("Frame", {
+AnchorPoint = Vector2.new(0, 0.5),
+Position = UDim2.new(0, 14, 0.5, 0),
+Size = UDim2.fromOffset(42, 42),
+BackgroundColor3 = color,
+BorderSizePixel = 0,
+}, button)
+corner(icon, 11)
+textLabel(icon, letter, {
+Size = UDim2.fromScale(1, 1),
+Font = Enum.Font.GothamBlack,
+TextSize = 18,
+TextColor3 = Color3.new(1, 1, 1),
+TextXAlignment = Enum.TextXAlignment.Center,
+})
+textLabel(button, title, {
+Position = UDim2.fromOffset(68, 14),
+Size = UDim2.new(1, -150, 0, 20),
+Font = Enum.Font.GothamBold,
+TextSize = 15,
+})
+textLabel(button, sub, {
+Position = UDim2.fromOffset(68, 36),
+Size = UDim2.new(1, -150, 0, 16),
+TextSize = 11,
+TextColor3 = THEME.muted,
+})
+local chip = new("Frame", {
+AnchorPoint = Vector2.new(1, 0.5),
+Position = UDim2.new(1, -12, 0.5, 0),
+Size = UDim2.fromOffset(60, 26),
+BackgroundColor3 = color,
+BackgroundTransparency = 0.75,
+BorderSizePixel = 0,
+}, button)
+corner(chip, 8)
+textLabel(chip, "COPY", {
+Size = UDim2.fromScale(1, 1),
+Font = Enum.Font.GothamBold,
+TextSize = 11,
+TextXAlignment = Enum.TextXAlignment.Center,
+})
+button.Activated:Connect(function()
+copyLink(link, doneMessage)
+end)
 end
-
 contactCard(38, "D", THEME.discord, "Discord", "Join the community server", CONFIG.Discord, "Discord link copied")
 contactCard(108, "W", THEME.whatsapp, "WhatsApp", "Follow the channel", CONFIG.WhatsApp, "WhatsApp link copied")
 contactCard(178, "T", THEME.tiktok, "TikTok", "Follow my account", CONFIG.TikTok, "TikTok link copied")
-
--- Support me (Game Passes)
 for index, pass in ipairs(CONFIG.SupportPasses or {}) do
-	local supportButton = makeButton(aboutRight, {
-		Text = "Support  " .. tostring(pass.amount) .. " R$",
-		Position = UDim2.fromOffset(16 + (index - 1) * 160, 256),
-		Size = UDim2.fromOffset(144, 34),
-		TextSize = 13,
-		Font = Enum.Font.GothamBlack,
-		TextColor3 = THEME.dark,
-	}, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 10 })
-	supportButton.Activated:Connect(function()
-		copyLink("https://www.roblox.com/game-pass/" .. tostring(pass.id), "Support link copied (" .. tostring(pass.amount) .. " R$)")
-	end)
+local supportButton = makeButton(aboutRight, {
+Text = "Support  " .. tostring(pass.amount) .. " R$",
+Position = UDim2.fromOffset(16 + (index - 1) * 160, 256),
+Size = UDim2.fromOffset(144, 34),
+TextSize = 13,
+Font = Enum.Font.GothamBlack,
+TextColor3 = THEME.dark,
+}, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 10 })
+supportButton.Activated:Connect(function()
+copyLink("https://www.roblox.com/game-pass/" .. tostring(pass.id), "Support link copied (" .. tostring(pass.amount) .. " R$)")
+end)
 end
-
 textLabel(aboutRight, "Tap a card or a Support button to copy its link, then paste it in your browser.", {
-	Position = UDim2.fromOffset(16, 298),
-	Size = UDim2.new(1, -32, 0, 22),
-	TextSize = 10,
-	TextColor3 = THEME.muted,
-	TextWrapped = true,
+Position = UDim2.fromOffset(16, 298),
+Size = UDim2.new(1, -32, 0, 22),
+TextSize = 10,
+TextColor3 = THEME.muted,
+TextWrapped = true,
 })
-textLab
+textLabel(aboutRight, "Made by " .. CONFIG.Creator .. "  |  " .. CONFIG.Community, {
+AnchorPoint = Vector2.new(0, 1),
+Position = UDim2.new(0, 16, 1, -12),
+Size = UDim2.new(1, -32, 0, 16),
+Font = Enum.Font.GothamBold,
+TextSize = 11,
+TextColor3 = THEME.accent,
+})
+task.spawn(function()
+local image = nil
+if CONFIG.AvatarImageUrl ~= "" and hasFS and type(getcustomasset) == "function" then
+local ok, result = pcall(function()
+local data = game:HttpGet(CONFIG.AvatarImageUrl)
+writefile("DZHUP_avatar.png", data)
+return getcustomasset("DZHUP_avatar.png")
+end)
+if ok and result then
+image = result
+end
+end
+if not image then
+local userId = CONFIG.AvatarRobloxUserId
+if (not userId or userId <= 0) and CONFIG.RobloxUsername and CONFIG.RobloxUsername ~= "" then
+local ok, id = pcall(function()
+return Players:GetUserIdFromNameAsync(CONFIG.RobloxUsername)
+end)
+if ok and type(id) == "number" then
+userId = id
+end
+end
+if userId and userId > 0 then
+local ok, thumb, ready = pcall(function()
+return Players:GetUserThumbnailAsync(
+userId,
+Enum.ThumbnailType.HeadShot,
+Enum.ThumbnailSize.Size150x150
+)
+end)
+if ok and thumb and thumb ~= "" and ready ~= false then
+image = thumb
+else
+image = string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", userId)
+end
+end
+end
+if image then
+avatarImage.Image = image
+avatarImage.Visible = true
+avatarLetter.Visible = false
+end
+end)
+end -- BLOCK creator
+do -- BLOCK world
+local card = new("Frame", {
+Size = UDim2.fromOffset(588, 356),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
+}, worldPage)
+corner(card, 12)
+stroke(card, THEME.line, 0.5, 1)
+sectionTitle(card, "TIME OF DAY", 12)
+local clockLabel = textLabel(card, "12:00", {
+Position = UDim2.fromOffset(16, 10),
+Size = UDim2.new(1, -32, 0, 20),
+Font = Enum.Font.GothamBlack,
+TextSize = 16,
+TextColor3 = THEME.accent,
+TextXAlignment = Enum.TextXAlignment.Right,
+})
+local PRESETS = { { "Dawn", 6 }, { "Day", 12 }, { "Sunset", 18 }, { "Night", 0 } }
+local presetRow = new("Frame", {
+Position = UDim2.fromOffset(16, 40),
+Size = UDim2.new(1, -32, 0, 34),
+BackgroundTransparency = 1,
+}, card)
+new("UIListLayout", {
+FillDirection = Enum.FillDirection.Horizontal,
+Padding = UDim.new(0, 8),
+SortOrder = Enum.SortOrder.LayoutOrder,
+}, presetRow)
+local presetButtons = {}
+local hour = 12
+local function lighting()
+return game:GetService("Lighting")
+end
+pcall(function()
+hour = lighting().ClockTime
+end)
+local knob = nil
+local function render()
+clockLabel.Text = string.format("%02d:%02d", math.floor(hour) % 24, math.floor((hour % 1) * 60))
+if knob then
+knob.Position = UDim2.new(math.clamp(hour / 24, 0, 1), 0, 0.5, 0)
+end
+for _, item in ipairs(presetButtons) do
+local active = math.abs(hour - item.hour) < 0.05
+item.button.BackgroundColor3 = active and THEME.accent or THEME.surface2
+item.button.TextColor3 = active and THEME.dark or THEME.text
+end
+end
+local function setHour(value, commit)
+hour = math.clamp(value, 0, 24)
+pcall(function()
+lighting().ClockTime = hour
+end)
+render()
+if commit then
+if type(save.settings.clock) ~= "table" then
+save.settings.clock = {}
+end
+save.settings.clock[placeKey] = hour
+persist()
+end
+end
+for index, item in ipairs(PRESETS) do
+local button = new("TextButton", {
+Text = item[1],
+Size = UDim2.fromOffset(126, 34),
+TextSize = 12,
+Font = Enum.Font.GothamBold,
+TextColor3 = THEME.text,
+BackgroundColor3 = THEME.surface2,
+AutoButtonColor = false,
+BorderSizePixel = 0,
+LayoutOrder = index,
+}, presetRow)
+corner(button, 8)
+stroke(button, THEME.line, 0.4, 1)
+table.insert(presetButtons, { button = button, hour = item[2] })
+button.Activated:Connect(function()
+setHour(item[2], true)
+end)
+end
+sectionTitle(card, "EXACT HOUR (drag)", 94)
+local hit = new("Frame", {
+Position = UDim2.fromOffset(16, 118),
+Size = UDim2.new(1, -32, 0, 40),
+BackgroundTransparency = 1,
+Active = true,
+}, card)
+local bar = new("Frame", {
+AnchorPoint = Vector2.new(0, 0.5),
+Position = UDim2.new(0, 0, 0.5, 0),
+Size = UDim2.new(1, 0, 0, 12),
+BackgroundColor3 = Color3.new(1, 1, 1),
+BorderSizePixel = 0,
+}, hit)
+corner(bar, 6)
+new("UIGradient", {
+Color = ColorSequence.new({
+ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 18, 45)),
+ColorSequenceKeypoint.new(0.25, Color3.fromRGB(255, 170, 110)),
+ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 200, 255)),
+ColorSequenceKeypoint.new(0.75, Color3.fromRGB(255, 120, 80)),
+ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 18, 45)),
+}),
+}, bar)
+knob = new("Frame", {
+AnchorPoint = Vector2.new(0.5, 0.5),
+Position = UDim2.new(0.5, 0, 0.5, 0),
+Size = UDim2.fromOffset(24, 24),
+BackgroundColor3 = THEME.accent,
+BorderSizePixel = 0,
+ZIndex = 3,
+}, hit)
+corner(knob, 12)
+stroke(knob, THEME.text, 0.3, 2)
+textLabel(card, "00", { Position = UDim2.fromOffset(16, 162), Size = UDim2.fromOffset(40, 14), TextSize = 10, TextColor3 = THEME.muted })
+textLabel(card, "12", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 162), Size = UDim2.fromOffset(40, 14), TextSize = 10, TextColor3 = THEME.muted, TextXAlignment = Enum.TextXAlignment.Center })
+textLabel(card, "24", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 162), Size = UDim2.fromOffset(40, 14), TextSize = 10, TextColor3 = THEME.muted, TextXAlignment = Enum.TextXAlignment.Right })
+textLabel(card, "The time is applied to the sky of your project and is saved with it. Save the project after changing it.", {
+Position = UDim2.fromOffset(16, 196),
+Size = UDim2.new(1, -32, 0, 34),
+TextSize = 11,
+TextColor3 = THEME.muted,
+TextWrapped = true,
+TextYAlignment = Enum.TextYAlignment.Top,
+})
+local sliding = false
+local function pointer(input)
+return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+end
+local function fromInput(input)
+local width = math.max(bar.AbsoluteSize.X, 1)
+local rel = (input.Position.X - bar.AbsolutePosition.X) / width
+setHour(math.clamp(rel, 0, 1) * 24, false)
+end
+hit.InputBegan:Connect(function(input)
+if pointer(input) then
+sliding = true
+fromInput(input)
+end
+end)
+on(UserInputService.InputChanged, function(input)
+if sliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+fromInput(input)
+end
+end)
+on(UserInputService.InputEnded, function(input)
+if sliding and pointer(input) then
+sliding = false
+setHour(hour, true)
+end
+end)
+function H.applyClock()
+local list = save.settings.clock
+local saved = type(list) == "table" and list[placeKey] or nil
+if type(saved) == "number" then
+hour = saved
+pcall(function()
+lighting().ClockTime = hour
+end)
+else
+pcall(function()
+hour = lighting().ClockTime
+end)
+end
+render()
+end
+render()
+end -- BLOCK world
+H.registerModule({
+key = "toolbox",
+title = "Toolbox",
+order = 50,
+build = function(page, ctx)
+local new, corner, stroke, tween = ctx.new, ctx.corner, ctx.stroke, ctx.tween
+local textLabel, makeButton, THEME = ctx.textLabel, ctx.makeButton, ctx.THEME
+local toast, trim, persist = ctx.toast, ctx.trim, ctx.persist
+local copyText, genv = ctx.copyText, ctx.genv
+local HttpService = game:GetService("HttpService")
+local BASE = "https://apis.roblox.com/toolbox-service/v1/"
+local FOLDER_NAME = "DZHUP_Toolbox"
+local UID_ATTR = "DZ_TB_UID"
+local PLACE_DISTANCE = 22
+local CATS = {
+{ key = "Models", title = "Models", typeId = 10 },
+{ key = "Decals", title = "Decals", typeId = 13 },
+{ key = "Meshes", title = "Meshes", typeId = 4 },
+{ key = "Audio", title = "Audio", typeId = 3 },
+{ key = "Animations", title = "Animations", typeId = 24 },
+{ key = "Plugins", title = "Plugins", typeId = 38 },
+{ key = "Favorites", title = "Favorites", kind = "fav" },
+{ key = "MyIds", title = "My IDs", kind = "mine" },
+{ key = "Placed", title = "Placed", kind = "placed" },
+}
+local SORTS = {
+{ "Relevance", 1 },
+{ "Most used", 2 },
+{ "Favorited", 3 },
+{ "Newest", 4 },
+{ "Top rated", 5 },
+}
+local ADD_TYPES = {
+{ "Model", 10 },
+{ "Decal", 13 },
+{ "Mesh", 4 },
+{ "Audio", 3 },
+{ "Animation", 24 },
+{ "Sky", "sky" },
+}
+local TYPE_NAMES = { [10] = "Model", [13] = "Decal", [4] = "Mesh", [3] = "Audio", [24] = "Animation", [38] = "Plugin", sky = "Sky" }
+local ANCHOR_CYCLE = { auto = "all", all = "none", none = "auto" }
+local ANCHOR_TEXT = { auto = "Auto", all = "All", none = "Off" }
+local MECH = {
+VehicleSeat = true, HingeConstraint = true, CylindricalConstraint = true, SpringConstraint = true,
+PrismaticConstraint = true, RodConstraint = true, RopeConstraint = true, Motor6D = true,
+Humanoid = true, AlignPosition = true, AlignOrientation = true, BodyVelocity = true,
+BodyAngularVelocity = true, BodyPosition = true, BodyGyro = true,
+}
+local DEFAULTS = {
+"4926139544|Part Trampoline", "11324928349|Lamp", "120813293048698|Podium",
+"94304441802173|Village Low Poly", "131232802624216|Text", "5526968660|Pilar Bunga",
+"574502744|Jembatan", "136224194594300|Part Bulet Biru", "91824881894906|Pilar Biru",
+"18385401040|Jamur 1", "5465044187|Jamur 2", "5465008653|Jamur 3", "14405338498|Pohon Biru",
+"101093196873917|Pilar Putih", "13717277279|Pagar", "108969178728061|Coil Mount Luna",
+"71816321170147|Fitur P Balap", "94599287071471|Ayunan Pink", "99774552211130|Lampion",
+"103932300220382|Efek Angin", "130556119417198|Efek Hujan", "107568096083006|Pulau Terapung",
+"78758196076694|Kerambit Coil", "16491763998|Text 3D", "5539708469|Pohon Hijau",
+"4987585723|Pagar Kayu", "83282010441336|Pohon Estetik", "10936331751|Kursi Raja",
+"117717806718562|Pohon Ungu", "16444908253|Waterfall", "18849541324|Logo Mount Neon",
+"77237492468310|Rintangan Nexora Full", "104719917463159|Tangga Mesh", "134505370549170|Rintangan Donat",
+}
+local st = ctx.store("toolboxV2")
+if type(st.fav) ~= "table" then
+st.fav = {}
+end
+if type(st.opts) ~= "table" then
+st.opts = {}
+end
+if type(st.placed) ~= "table" then
+st.placed = {}
+end
+if type(st.mine) ~= "table" then
+st.mine = {}
+for _, line in ipairs(DEFAULTS) do
+local id, name = string.match(line, "^(%d+)|(.+)$")
+if id then
+table.insert(st.mine, { id = id, name = name, typeId = 10, creator = "My IDs" })
+end
+end
+local old = ctx.save.settings.toolbox
+if type(old) == "table" and type(old.custom) == "table" then
+for _, entry in ipairs(old.custom) do
+table.insert(st.mine, {
+id = tostring(entry.id),
+name = tostring(entry.name),
+typeId = entry.category == "Sky" and "sky" or 10,
+creator = "My IDs",
+})
+end
+end
+persist()
+end
+local opts = st.opts
+if opts.anchorMode == nil then
+opts.anchorMode = opts.anchor == true and "all" or "auto"
+end
+if opts.restore == nil then
+opts.restore = true
+end
+local catIndex, sortIndex, addTypeIndex = 1, 1, 1
+local keyword = ""
+local items, cursor = {}, nil
+local loading, loadError = false, nil
+local requestToken = 0
+local loadedOnce = false
+local history = {}
+local folderRef = nil
+local restoring = false
+local render, refresh, paintChips
+local function alive(instance)
+local ok, result = pcall(function()
+return instance ~= nil and instance:IsDescendantOf(game)
+end)
+return ok and result == true
+end
+local function getFolder()
+local ws = game:GetService("Workspace")
+if folderRef and alive(folderRef) and folderRef.Parent == ws then
+return folderRef
+end
+local folder = ws:FindFirstChild(FOLDER_NAME)
+if not folder then
+folder = Instance.new("Folder")
+folder.Name = FOLDER_NAME
+folder.Parent = ws
+end
+folderRef = folder
+return folder
+end
+local function records()
+local key = ctx.placeKey()
+local list = st.placed[key]
+if type(list) ~= "table" then
+list = {}
+st.placed[key] = list
+end
+return list
+end
+local function newUid()
+return string.sub(string.gsub(HttpService:GenerateGUID(false), "-", ""), 1, 12)
+end
+local function findByUid(uid)
+local parents = { getFolder(), game:GetService("Lighting") }
+for _, parent in ipairs(parent
