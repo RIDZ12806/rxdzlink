@@ -244,6 +244,7 @@ local function loadFirstToolbox()
     local mainGui = Instance.new("ScreenGui")
     mainGui.Name = "SlBlackProEzyV1"; mainGui.ResetOnSpawn = false
     mainGui.IgnoreGuiInset = true; mainGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    mainGui.DisplayOrder = 9999
     mainGui.Parent = PlayerGui2
 
     local TOPBAR_H = 0
@@ -634,6 +635,33 @@ local function loadFirstToolbox()
             openTbPanel()
         end
     end
+
+    -- Visible launcher: the original Toolbox panel starts hidden, so this button
+    -- gives the user a clear way to open it with a tap/click.
+    local launcher = Instance.new("TextButton")
+    launcher.Name = "EzyV1ToolboxLauncher"
+    launcher.Size = UDim2.new(0, 48, 0, 48)
+    launcher.Position = UDim2.new(0, 16, 0.55, 0)
+    launcher.BackgroundColor3 = C2.BLUE
+    launcher.BorderSizePixel = 0
+    launcher.Text = "TB"
+    launcher.TextColor3 = C2.WHITE
+    launcher.TextSize = 14
+    launcher.Font = Enum.Font.GothamBlack
+    launcher.AutoButtonColor = true
+    launcher.ZIndex = 9000
+    launcher.Parent = mainGui
+    mkCorner(24, launcher)
+    mkStroke(1.5, C2.BORDBRT, launcher)
+    launcher.Activated:Connect(function()
+        _G.SL_ToggleToolbox()
+    end)
+
+    task.spawn(function()
+        task.wait(0.35)
+        showToast("Ezy Toolbox loaded - tap TB to open", Color3.fromRGB(20, 80, 160))
+    end)
+    print("[Ezy Toolbox] Loaded. Tap the blue TB button to open.")
 end
 
 task.spawn(loadFirstToolbox)
