@@ -2,12 +2,14 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
-v11: MODULE SYSTEM + new professional Toolbox.
-- Every tool is now a separate module (H.registerModule): own tab, own page, own saved data.
-  Adding a new system later = one more module block. Tabs scroll when there are many.
-- Toolbox rebuilt: category sidebar, search, sort, cards, My IDs, Favorites and a new Placed list.
-- FIX: items vanishing after entering the game. Every inserted item is saved (asset id + position)
-  and brought back automatically after Play mode / project switch. Smart Anchor keeps cars free.
+v11: SEPARATE SYSTEMS + new professional Toolbox.
+- Each tool is its own module (H.registerModule) with its own tab, page and saved data.
+  Names = Create / Style / Saved (one menu). Toolbox = its own menu. World, Creator = own menus.
+- NO folders and no wrappers: names and toolbox items go straight into Workspace / the right service.
+- Toolbox: scripts go where they belong (Script > ServerScriptService, LocalScript > StarterPlayerScripts,
+  ModuleScript > ReplicatedStorage, ScreenGui > StarterGui, Tool > StarterPack, Sky > Lighting).
+  Scripts inside a model stay inside it so cars and doors keep working.
+- Everything inserted is remembered and comes back after Play mode / project switch.
 
 v10: NEW REAL Toolbox (replaces the old fixed list). Same window, same RX icon, separate system.
 - Pulls items live from the Roblox Creator Store, classified like the real store:
@@ -333,31 +335,50 @@ end
 local function trim(text)
 return (string.gsub(string.gsub(text, "^%s+", ""), "%s+$", ""))
 end
-local namesFolder = Workspace:FindFirstChild("DZHUP_Names")
-if not namesFolder then
-namesFolder = Instance.new("Folder")
-namesFolder.Name = "DZHUP_Names"
-namesFolder.Parent = Workspace
+function H.migrateFolder(folderName)
+pcall(function()
+local ws = game:GetService("Workspace")
+local old = ws:FindFirstChild(folderName)
+if old and old:IsA("Folder") then
+for _, child in ipairs(old:GetChildren()) do
+child.Parent = ws
+end
+old:Destroy()
+end
+end)
 end
 function H.getFolder()
 Workspace = game:GetService("Workspace")
-local folder = namesFolder
-local alive = false
+H.migrateFolder("DZHUP_Names")
+return Workspace
+end
+function H.sentinel()
+local s = { inst = nil }
+function s.reset()
 pcall(function()
-alive = folder ~= nil and folder.Parent == Workspace and folder:IsDescendantOf(game)
+if s.inst then
+s.inst:Destroy()
+end
 end)
-if alive then
-return folder
+pcall(function()
+local ws = game:GetService("Workspace")
+local inst = Instance.new("BoolValue")
+inst.Name = "DZ"
+inst.Archivable = false
+inst.Parent = ws:FindFirstChildOfClass("Terrain") or ws
+s.inst = inst
+end)
 end
-folder = Workspace:FindFirstChild("DZHUP_Names")
-if not folder then
-folder = Instance.new("Folder")
-folder.Name = "DZHUP_Names"
-folder.Parent = Workspace
+function s.dead()
+local ok, result = pcall(function()
+return s.inst ~= nil and s.inst:IsDescendantOf(game)
+end)
+return not (ok and result == true)
 end
-namesFolder = folder
-return folder
+s.reset()
+return s
 end
+H.nameSentinel = H.sentinel()
 local guiParent
 do
 local ok, hui = pcall(function()
@@ -372,7 +393,7 @@ child:Destroy()
 end
 end
 end)
-local PANEL_W, PANEL_H = 620, 510
+local PANEL_W, PANEL_H = 620, 546
 local MIN_SCALE = 0.4
 local gui = new("ScreenGui", {
 Name = "DZHUP_NameMaker",
@@ -716,7 +737,7 @@ corner(tabIndicator, 7)
 new("UIGradient", { Color = ColorSequence.new(THEME.accentSoft, THEME.accent), Rotation = 90 }, tabIndicator)
 local content = new("Frame", {
 Position = UDim2.fromOffset(16, CONTENT_Y),
-Size = UDim2.fromOffset(588, 356),
+Size = UDim2.fromOffset(588, 392),
 BackgroundTransparency = 1,
 }, panel)
 local function newPage()
@@ -732,16 +753,6 @@ function H.registerModule(def)
 def.page = def.page or newPage()
 table.insert(H.modules, def)
 return def.page
-end
-function H.setTabTitle(key, text)
-for _, def in ipairs(H.modules) do
-if def.key == key then
-def.title = text
-if def.button then
-def.button.Text = text
-end
-end
-end
 end
 textLabel(panel, "Drag the bottom-right corner to resize", {
 AnchorPoint = Vector2.new(0.5, 1),
@@ -2049,7 +2060,7 @@ end
 animated[group] = info
 end
 do -- BLOCK effectsInstaller
-local EFFECT_VERSION = 7
+local EFFECT_VERSION = 8
 local EFFECT_MARK = "DZ HUP | Name Effects"
 local EFFECT_SOURCE = [==[
 --[[
@@ -2118,7 +2129,7 @@ end
 return info
 end
 local function track(model)
-if not model:IsA("Model") then
+if not model:IsA("Model") or string.sub(model.Name, 1, 6) ~= "DZHUP_" then
 return
 end
 if model:GetAttribute("DZ_Phys") ~= true then
@@ -2148,15 +2159,7 @@ task.wait(2)
 end
 end)
 end
-local existing = Workspace:FindFirstChild(FOLDER_NAME)
-if existing then
-watch(existing)
-end
-Workspace.ChildAdded:Connect(function(child)
-if child.Name == FOLDER_NAME then
-watch(child)
-end
-end)
+watch(Workspace)
 local last = 0
 RunService.Heartbeat:Connect(function()
 local now = os.clock()
@@ -2516,6 +2519,9 @@ highlight.Parent = group
 end
 group.PrimaryPart = firstPart
 group.Parent = H.getFolder()
+pcall(function()
+group:SetAttribute("DZ_Name", true)
+end)
 H.hold(group)
 pcall(function()
 local _, size = group:GetBoundingBox()
@@ -2687,7 +2693,9 @@ local sorted = table.clone(names)
 table.sort(sorted, function(a, b)
 return (a.order or 0) > (b.order or 0)
 end)
-H.setTabTitle("names", string.format("Names (%d)", #sorted))
+if H.setSubTitle then
+H.setSubTitle("saved", string.format("Saved (%d)", #sorted))
+end
 listCount.Text = string.format("%d / %d", #sorted, CONFIG.MaxNames)
 emptyState.Visible = #sorted == 0
 listFrame.Visible = #sorted > 0
@@ -2830,7 +2838,7 @@ end)
 end -- BLOCK mynames
 do -- BLOCK creator
 local aboutLeft = new("Frame", {
-Size = UDim2.fromOffset(240, 356),
+Size = UDim2.fromOffset(240, 392),
 BackgroundColor3 = THEME.surface,
 BorderSizePixel = 0,
 }, aboutPage)
@@ -2928,7 +2936,7 @@ TextXAlignment = Enum.TextXAlignment.Center,
 })
 local aboutRight = new("Frame", {
 Position = UDim2.fromOffset(252, 0),
-Size = UDim2.fromOffset(336, 356),
+Size = UDim2.fromOffset(336, 392),
 BackgroundColor3 = THEME.surface,
 BorderSizePixel = 0,
 }, aboutPage)
@@ -3077,7 +3085,7 @@ end)
 end -- BLOCK creator
 do -- BLOCK world
 local card = new("Frame", {
-Size = UDim2.fromOffset(588, 356),
+Size = UDim2.fromOffset(588, 392),
 BackgroundColor3 = THEME.surface,
 BorderSizePixel = 0,
 }, worldPage)
@@ -3247,7 +3255,7 @@ end -- BLOCK world
 H.registerModule({
 key = "toolbox",
 title = "Toolbox",
-order = 50,
+order = 20,
 build = function(page, ctx)
 local new, corner, stroke, tween = ctx.new, ctx.corner, ctx.stroke, ctx.tween
 local textLabel, makeButton, THEME = ctx.textLabel, ctx.makeButton, ctx.THEME
@@ -3255,7 +3263,6 @@ local toast, trim, persist = ctx.toast, ctx.trim, ctx.persist
 local copyText, genv = ctx.copyText, ctx.genv
 local HttpService = game:GetService("HttpService")
 local BASE = "https://apis.roblox.com/toolbox-service/v1/"
-local FOLDER_NAME = "DZHUP_Toolbox"
 local UID_ATTR = "DZ_TB_UID"
 local PLACE_DISTANCE = 22
 local CATS = {
@@ -3285,8 +3292,8 @@ local ADD_TYPES = {
 { "Sky", "sky" },
 }
 local TYPE_NAMES = { [10] = "Model", [13] = "Decal", [4] = "Mesh", [3] = "Audio", [24] = "Animation", [38] = "Plugin", sky = "Sky" }
-local ANCHOR_CYCLE = { auto = "all", all = "none", none = "auto" }
-local ANCHOR_TEXT = { auto = "Auto", all = "All", none = "Off" }
+local ANCHOR_CYCLE = { none = "all", all = "auto", auto = "none" }
+local ANCHOR_TEXT = { none = "Off", all = "All", auto = "Smart" }
 local MECH = {
 VehicleSeat = true, HingeConstraint = true, CylindricalConstraint = true, SpringConstraint = true,
 PrismaticConstraint = true, RodConstraint = true, RopeConstraint = true, Motor6D = true,
@@ -3339,7 +3346,7 @@ persist()
 end
 local opts = st.opts
 if opts.anchorMode == nil then
-opts.anchorMode = opts.anchor == true and "all" or "auto"
+opts.anchorMode = opts.anchor == true and "all" or "none"
 end
 if opts.restore == nil then
 opts.restore = true
@@ -3351,28 +3358,48 @@ local loading, loadError = false, nil
 local requestToken = 0
 local loadedOnce = false
 local history = {}
-local folderRef = nil
 local restoring = false
+local sentinel = ctx.sentinel()
 local render, refresh, paintChips
-local function alive(instance)
-local ok, result = pcall(function()
-return instance ~= nil and instance:IsDescendantOf(game)
+local function svc(name)
+return game:GetService(name)
+end
+local function containers()
+local list = { svc("Workspace"), svc("Lighting"), svc("ServerScriptService"), svc("ReplicatedStorage"), svc("StarterGui"), svc("StarterPack"), svc("SoundService") }
+pcall(function()
+local starter = svc("StarterPlayer")
+for _, name in ipairs({ "StarterPlayerScripts", "StarterCharacterScripts" }) do
+local child = starter:FindFirstChild(name)
+if child then
+table.insert(list, child)
+end
+end
 end)
-return ok and result == true
+return list
 end
-local function getFolder()
-local ws = game:GetService("Workspace")
-if folderRef and alive(folderRef) and folderRef.Parent == ws then
-return folderRef
+local function buildIndex()
+local index = {}
+for _, parent in ipairs(containers()) do
+local ok, children = pcall(function()
+return parent:GetChildren()
+end)
+if ok then
+for _, child in ipairs(children) do
+local uid = child:GetAttribute(UID_ATTR)
+if uid then
+index[uid] = index[uid] or {}
+table.insert(index[uid], child)
 end
-local folder = ws:FindFirstChild(FOLDER_NAME)
-if not folder then
-folder = Instance.new("Folder")
-folder.Name = FOLDER_NAME
-folder.Parent = ws
 end
-folderRef = folder
-return folder
+end
+end
+return index
+end
+local function findAll(uid)
+return buildIndex()[uid] or {}
+end
+local function findByUid(uid)
+return findAll(uid)[1]
 end
 local function records()
 local key = ctx.placeKey()
@@ -3386,20 +3413,8 @@ end
 local function newUid()
 return string.sub(string.gsub(HttpService:GenerateGUID(false), "-", ""), 1, 12)
 end
-local function findByUid(uid)
-local parents = { getFolder(), game:GetService("Lighting") }
-for _, parent in ipairs(parents) do
-for _, child in ipairs(parent:GetChildren()) do
-if child:GetAttribute(UID_ATTR) == uid then
-return child
-end
-end
-end
-return nil
-end
 local function removeRecord(rec)
-local inst = findByUid(rec.uid)
-if inst then
+for _, inst in ipairs(findAll(rec.uid)) do
 pcall(function()
 inst:Destroy()
 end)
@@ -3412,6 +3427,16 @@ break
 end
 end
 end
+pcall(function()
+local ws = svc("Workspace")
+local old = ws:FindFirstChild("DZHUP_Toolbox")
+if old and old:IsA("Folder") then
+for _, child in ipairs(old:GetChildren()) do
+child.Parent = ws
+end
+old:Destroy()
+end
+end)
 local function httpGet(url)
 local lastError = "no http function"
 local req = genv.request or genv.http_request or (type(genv.syn) == "table" and genv.syn.request) or nil
@@ -3544,14 +3569,14 @@ local hit = nil
 pcall(function()
 local params = RaycastParams.new()
 params.FilterType = Enum.RaycastFilterType.Exclude
-local ignore = { getFolder() }
+local ignore = {}
 local localPlayer = game:GetService("Players").LocalPlayer
 if localPlayer and localPlayer.Character then
 table.insert(ignore, localPlayer.Character)
 end
 params.FilterDescendantsInstances = ignore
 local startY = math.max(position.Y, anchor.Y) + 60
-hit = game:GetService("Workspace"):Raycast(Vector3.new(target.X, startY, target.Z), Vector3.new(0, -800, 0), params)
+hit = svc("Workspace"):Raycast(Vector3.new(target.X, startY, target.Z), Vector3.new(0, -800, 0), params)
 end)
 if hit then
 return hit.Position
@@ -3621,7 +3646,7 @@ root.CFrame = CFrame.new(point + Vector3.new(0, root.Size.Y / 2, 0)) * root.CFra
 end
 end)
 end
-root.Parent = getFolder()
+root.Parent = svc("Workspace")
 makeSaveable(root)
 end
 local function tag(root, rec)
@@ -3630,6 +3655,43 @@ root:SetAttribute(UID_ATTR, rec.uid)
 root:SetAttribute("DZ_TB_ASSET", tostring(rec.id))
 end)
 end
+local function routeTarget(object)
+local function pick(parent, label)
+if parent then
+return parent, label
+end
+return nil
+end
+if object:IsA("LocalScript") then
+local starter = svc("StarterPlayer")
+return pick(starter:FindFirstChild("StarterPlayerScripts"), "StarterPlayerScripts")
+elseif object:IsA("Script") then
+local context = nil
+pcall(function()
+context = object.RunContext
+end)
+if context == Enum.RunContext.Client then
+return svc("ReplicatedStorage"), "ReplicatedStorage"
+end
+return svc("ServerScriptService"), "ServerScriptService"
+elseif object:IsA("ModuleScript") then
+return svc("ReplicatedStorage"), "ReplicatedStorage"
+elseif object:IsA("ScreenGui") then
+return svc("StarterGui"), "StarterGui"
+elseif object:IsA("Tool") or object:IsA("HopperBin") then
+return svc("StarterPack"), "StarterPack"
+elseif object:IsA("Sky") or object:IsA("Atmosphere") or object:IsA("Clouds") or object:IsA("PostEffect") then
+if object:IsA("Sky") then
+for _, child in ipairs(svc("Lighting"):GetChildren()) do
+if child:IsA("Sky") then
+child:Destroy()
+end
+end
+end
+return svc("Lighting"), "Lighting"
+end
+return nil
+end
 local function createItem(rec, restoringNow)
 local assetId = tonumber(string.match(tostring(rec.id), "%d+"))
 if not assetId then
@@ -3637,11 +3699,11 @@ return false, "Invalid asset id"
 end
 local t = rec.typeId
 local texture = "rbxassetid://" .. tostring(assetId)
-local folder = getFolder()
+local workspaceService = svc("Workspace")
 if t == "sky" then
 local sky = nil
 local ok = pcall(function()
-local lighting = game:GetService("Lighting")
+local lighting = svc("Lighting")
 for _, child in ipairs(lighting:GetChildren()) do
 if child:IsA("Sky") then
 child:Destroy()
@@ -3669,17 +3731,17 @@ if t == 24 then
 local animation = Instance.new("Animation")
 animation.Name = rec.name
 animation.AnimationId = texture
-animation.Parent = folder
+animation.Parent = workspaceService
 tag(animation, rec)
-return true, "Animation added: " .. rec.name, animation
+return true, "Animation added to Workspace: " .. rec.name, animation
 end
 if t == 3 then
 local sound = Instance.new("Sound")
 sound.Name = rec.name
 sound.SoundId = texture
-sound.Parent = folder
+sound.Parent = workspaceService
 tag(sound, rec)
-return true, "Audio added: " .. rec.name, sound
+return true, "Audio added to Workspace: " .. rec.name, sound
 end
 local cf = cfFromRecord(rec)
 if t == 13 then
@@ -3736,12 +3798,32 @@ local objects = loadAsset(assetId)
 if not objects then
 return false, "Could not load asset " .. tostring(assetId)
 end
+local spatial, routedNames = {}, {}
+local firstRouted = nil
+for _, object in ipairs(objects) do
+local target, label = routeTarget(object)
+if target then
+object.Parent = target
+makeSaveable(object)
+tag(object, rec)
+firstRouted = firstRouted or object
+table.insert(routedNames, object.Name .. " > " .. label)
+else
+table.insert(spatial, object)
+end
+end
+if #spatial == 0 then
+if not firstRouted then
+return false, "The asset is empty"
+end
+return true, "Placed: " .. table.concat(routedNames, ", "), firstRouted
+end
 local root = nil
-if #objects == 1 and (objects[1]:IsA("Model") or objects[1]:IsA("BasePart")) then
-root = objects[1]
+if #spatial == 1 and (spatial[1]:IsA("Model") or spatial[1]:IsA("BasePart")) then
+root = spatial[1]
 else
 root = Instance.new("Model")
-for _, object in ipairs(objects) do
+for _, object in ipairs(spatial) do
 object.Parent = root
 end
 end
@@ -3772,7 +3854,7 @@ end)
 end
 end
 end
-local mode = rec.anchorMode or "auto"
+local mode = rec.anchorMode or "none"
 local doAnchor = mode == "all" or (mode == "auto" and not mechanical)
 if doAnchor then
 if root:IsA("BasePart") then
@@ -3788,11 +3870,15 @@ placeRoot(root, cf)
 tag(root, rec)
 local message = "Inserted: " .. rec.name
 if vehicle then
-message = message .. " (vehicle: kept free to drive)"
-elseif removed > 0 then
+message = message .. " (vehicle)"
+end
+if removed > 0 then
 message = message .. " (" .. removed .. " scripts removed)"
 elseif scriptCount > 0 then
-message = message .. " (" .. scriptCount .. " scripts inside)"
+message = message .. " (" .. scriptCount .. " scripts inside, kept)"
+end
+if #routedNames > 0 then
+message = message .. " + " .. table.concat(routedNames, ", ")
 end
 return true, message, root
 end
@@ -3823,9 +3909,9 @@ return 0
 end
 restoring = true
 local count = 0
-getFolder()
+local index = buildIndex()
 for _, rec in ipairs(table.clone(records())) do
-if rec.typeId ~= 38 and not findByUid(rec.uid) then
+if rec.typeId ~= 38 and not index[rec.uid] then
 local ok, success = pcall(createItem, rec, true)
 if ok and success then
 count += 1
@@ -3864,7 +3950,7 @@ end)
 return box
 end
 local side = new("Frame", {
-Size = UDim2.fromOffset(112, 356),
+Size = UDim2.fromOffset(112, 392),
 BackgroundColor3 = THEME.surface,
 BorderSizePixel = 0,
 }, page)
@@ -3902,7 +3988,7 @@ end
 local button = new("TextButton", {
 Text = "",
 Size = UDim2.new(1, 0, 0, 28),
-BackgroundColor3 = THEME.surface,
+BackgroundColor3 = THEME.surface2,
 BackgroundTransparency = 1,
 AutoButtonColor = false,
 BorderSizePixel = 0,
@@ -3931,8 +4017,7 @@ TextSize = 10,
 TextColor3 = THEME.muted,
 TextXAlignment = Enum.TextXAlignment.Right,
 })
-local chip = { button = button, bar = bar, label = label, badge = badge }
-table.insert(chips, chip)
+table.insert(chips, { button = button, bar = bar, label = label, badge = badge })
 button.MouseEnter:Connect(function()
 if catIndex ~= index then
 tween(button, 0.1, { BackgroundTransparency = 0.6 })
@@ -3978,7 +4063,7 @@ end
 end
 local main = new("Frame", {
 Position = UDim2.fromOffset(120, 0),
-Size = UDim2.fromOffset(468, 356),
+Size = UDim2.fromOffset(468, 392),
 BackgroundTransparency = 1,
 }, page)
 local searchBox = field(main, 0, 0, 236, 32, "Search the store...")
@@ -4070,17 +4155,11 @@ for _, rec in ipairs(table.clone(records())) do
 removeRecord(rec)
 removedCount += 1
 end
-for _, child in ipairs(getFolder():GetChildren()) do
-removedCount += 1
-pcall(function()
-child:Destroy()
-end)
-end
 table.clear(history)
 persist()
 paintChips()
 render()
-toast(removedCount == 0 and "Nothing to clear" or "Cleared all inserted items", removedCount > 0)
+toast(removedCount == 0 and "Nothing to clear" or ("Removed " .. removedCount .. " inserted items"), removedCount > 0)
 end)
 local function optionButton(x, getText)
 local button = makeButton(main, {
@@ -4101,11 +4180,15 @@ local anchorButton, paintAnchor = optionButton(0, function()
 return "Anchor: " .. ANCHOR_TEXT[opts.anchorMode], opts.anchorMode ~= "none"
 end)
 anchorButton.Activated:Connect(function()
-opts.anchorMode = ANCHOR_CYCLE[opts.anchorMode] or "auto"
+opts.anchorMode = ANCHOR_CYCLE[opts.anchorMode] or "none"
 paintAnchor()
 persist()
-if opts.anchorMode == "auto" then
-toast("Auto: cars and moving things stay free, everything else is anchored", true)
+if opts.anchorMode == "none" then
+toast("Off: items stay exactly as the store made them", true)
+elseif opts.anchorMode == "auto" then
+toast("Smart: cars and moving things stay free, the rest is anchored", true)
+else
+toast("All: everything is anchored", true)
 end
 end)
 local scriptsButton, paintScripts = optionButton(159, function()
@@ -4180,7 +4263,7 @@ toast("Item added: " .. name, true)
 end)
 local grid = new("ScrollingFrame", {
 Position = UDim2.fromOffset(0, 70),
-Size = UDim2.fromOffset(468, 286),
+Size = UDim2.fromOffset(468, 322),
 BackgroundColor3 = THEME.field,
 BorderSizePixel = 0,
 ScrollBarThickness = 4,
@@ -4204,7 +4287,7 @@ SortOrder = Enum.SortOrder.LayoutOrder,
 }, grid)
 local statusLabel = textLabel(main, "", {
 Position = UDim2.fromOffset(0, 70),
-Size = UDim2.fromOffset(468, 286),
+Size = UDim2.fromOffset(468, 322),
 Font = Enum.Font.GothamBold,
 TextSize = 14,
 TextColor3 = THEME.muted,
@@ -4373,8 +4456,8 @@ toast("Removed from My IDs", true)
 end)
 end
 end
-local function buildPlacedCard(rec, index)
-local inst = findByUid(rec.uid)
+local function buildPlacedCard(rec, index, index2)
+local inst = index2[rec.uid] and index2[rec.uid][1] or nil
 local card = cardBase(rec, index, inst == nil and rec.typeId ~= 38)
 local selectButton = makeButton(card, {
 Text = inst and "Select" or "Restore",
@@ -4399,8 +4482,8 @@ TextSize = 11,
 TextColor3 = THEME.danger,
 }, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
 selectButton.Activated:Connect(function()
-local target = findByUid(rec.uid)
-if not target then
+local targets = findAll(rec.uid)
+if #targets == 0 then
 task.spawn(function()
 local ok, success, message = pcall(createItem, rec, true)
 toast(ok and tostring(message) or tostring(success), ok and success)
@@ -4409,7 +4492,7 @@ end)
 return
 end
 pcall(function()
-game:GetService("Selection"):Set({ target })
+game:GetService("Selection"):Set(targets)
 end)
 toast("Selected: " .. rec.name, true)
 end)
@@ -4421,10 +4504,10 @@ return
 end
 local ok = pcall(function()
 local position = target:GetPivot().Position
-local camera = game:GetService("Workspace").CurrentCamera
+local camera = svc("Workspace").CurrentCamera
 camera.CFrame = CFrame.lookAt(position + Vector3.new(0, 12, 24), position)
 end)
-toast(ok and ("Camera moved to " .. rec.name) or "Could not move the camera", ok)
+toast(ok and ("Camera moved to " .. rec.name) or "This item has no position", ok)
 end)
 local armed = false
 deleteButton.Activated:Connect(function()
@@ -4471,7 +4554,7 @@ local kind = cat.kind
 local isMine = kind == "mine"
 addPanel.Visible = isMine
 grid.Position = UDim2.fromOffset(0, isMine and 114 or 70)
-grid.Size = UDim2.fromOffset(468, isMine and 242 or 286)
+grid.Size = UDim2.fromOffset(468, isMine and 278 or 322)
 statusLabel.Position = grid.Position
 statusLabel.Size = grid.Size
 local list = items
@@ -4510,9 +4593,10 @@ return
 end
 statusLabel.Visible = false
 grid.Visible = true
+local index2 = kind == "placed" and buildIndex() or nil
 for index, item in ipairs(list) do
 if kind == "placed" then
-buildPlacedCard(item.rec, index)
+buildPlacedCard(item.rec, index, index2)
 else
 buildItemCard(item, index, isMine)
 end
@@ -4546,11 +4630,11 @@ lastKey = ctx.placeKey()
 while genv.DZHUP_TBToken == token do
 task.wait(1.5)
 local key = ctx.placeKey()
-if key ~= lastKey or not alive(folderRef) then
+if key ~= lastKey or sentinel.dead() then
 lastKey = key
-folderRef = nil
 table.clear(history)
 task.wait(2)
+sentinel.reset()
 local restored = restoreAll(false)
 if restored > 0 then
 toast("Toolbox restored " .. restored .. " items", true)
@@ -4574,19 +4658,80 @@ end,
 })
 local currentTab = 1
 do -- BLOCK modules
-H.registerModule({ key = "create", title = "Create", order = 10, page = createPage })
-H.registerModule({ key = "studio", title = "Studio", order = 20, page = studioPage })
-H.registerModule({ key = "names", title = "Names", order = 30, page = listPage, onShow = function()
+local namesPage = newPage()
+local namesBody = new("Frame", {
+Position = UDim2.fromOffset(0, 36),
+Size = UDim2.fromOffset(588, 356),
+BackgroundTransparency = 1,
+}, namesPage)
+createPage.Parent = namesBody
+studioPage.Parent = namesBody
+listPage.Parent = namesBody
+local SUBS = {
+{ key = "create", title = "Create", page = createPage },
+{ key = "style", title = "Style", page = studioPage },
+{ key = "saved", title = "Saved", page = listPage },
+}
+local subIndex = 1
+local function showSub(index)
+subIndex = index
+for i, sub in ipairs(SUBS) do
+local active = i == index
+sub.page.Visible = active
+tween(sub.button, 0.14, { BackgroundColor3 = active and THEME.accent or THEME.surface2 })
+sub.button.TextColor3 = active and THEME.dark or THEME.text
+end
+if index == 3 then
 renderList()
+end
+end
+for index, sub in ipairs(SUBS) do
+local button = new("TextButton", {
+Text = sub.title,
+Position = UDim2.fromOffset((index - 1) * 104, 0),
+Size = UDim2.fromOffset(98, 28),
+Font = Enum.Font.GothamBlack,
+TextSize = 12,
+TextColor3 = THEME.text,
+BackgroundColor3 = THEME.surface2,
+AutoButtonColor = false,
+BorderSizePixel = 0,
+}, namesPage)
+corner(button, 8)
+stroke(button, THEME.line, 0.4, 1)
+sub.button = button
+button.Activated:Connect(function()
+showSub(index)
+end)
+end
+textLabel(namesPage, "3D NAME MAKER", {
+AnchorPoint = Vector2.new(1, 0),
+Position = UDim2.new(1, 0, 0, 0),
+Size = UDim2.fromOffset(200, 28),
+TextXAlignment = Enum.TextXAlignment.Right,
+Font = Enum.Font.GothamBlack,
+TextSize = 11,
+TextColor3 = THEME.muted,
+})
+function H.setSubTitle(key, text)
+for _, sub in ipairs(SUBS) do
+if sub.key == key then
+sub.title = text
+sub.button.Text = text
+end
+end
+end
+H.registerModule({ key = "names", title = "Names", order = 10, page = namesPage, onShow = function()
+showSub(subIndex)
 end })
-H.registerModule({ key = "world", title = "World", order = 40, page = worldPage })
+H.registerModule({ key = "world", title = "World", order = 30, page = worldPage })
 H.registerModule({ key = "creator", title = "Creator", order = 90, page = aboutPage })
 local ctx = {
 new = new, corner = corner, stroke = stroke, tween = tween, loop = loop,
 textLabel = textLabel, makeButton = makeButton, THEME = THEME,
 toast = showToast, trim = trim, persist = persist, save = save,
 copyText = copyText, genv = genv, on = on, hasFS = hasFS,
-viewBasis = viewBasis, findSpawn = findSpawnPosition,
+viewBasis = viewBasis, findSpawn = findSpawnPosition, sentinel = H.sentinel,
 placeKey = function()
 return placeKey
 end,
@@ -5140,17 +5285,12 @@ persist()
 table.clear(templates)
 table.clear(animated)
 end
-local stale = true
-pcall(function()
-stale = not (namesFolder ~= nil and namesFolder:IsDescendantOf(game))
-end)
+local stale = H.nameSentinel.dead()
 if changedProject or stale then
+H.nameSentinel.reset()
 table.clear(animated)
 H.getFolder()
 pcall(renderList)
-if H.renderToolbox then
-pcall(H.renderToolbox)
-end
 if H.applyClock then
 pcall(H.applyClock)
 end
