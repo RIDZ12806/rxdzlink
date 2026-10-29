@@ -2,6 +2,8 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
+v14: Toolbox now preloads meshes before placing, puts the lowest part on the ground, never deletes real car scripts, and puts back items that fall through the floor.
+
 v13: items no longer fall in Play mode (Anchor defaults to Smart, old items get anchored); World moved inside Names;
 bigger text and a cleaner Toolbox layout.
 
@@ -544,7 +546,7 @@ Text = "RX",
 AnchorPoint = Vector2.new(0, 0.5),
 Position = UDim2.new(0, 12, 0.5, 0),
 Size = UDim2.fromOffset(44, 44),
-TextSize = 15,
+TextSize = 16,
 Font = Enum.Font.GothamBlack,
 }, { fill = THEME.header, stroke = THEME.accent, strokeTransparency = 0.6, radius = 22 })
 openButton.TextColor3 = THEME.accent
@@ -636,7 +638,7 @@ new("UIGradient", { Color = ColorSequence.new(THEME.accentSoft, THEME.accent), R
 textLabel(badge, "3D", {
 Size = UDim2.fromScale(1, 1),
 Font = Enum.Font.GothamBlack,
-TextSize = 15,
+TextSize = 16,
 TextColor3 = THEME.dark,
 TextXAlignment = Enum.TextXAlignment.Center,
 })
@@ -645,12 +647,12 @@ textLabel(header, "DZ HUP  Studio Tools", {
 Position = UDim2.fromOffset(58, 10),
 Size = UDim2.new(1, -260, 0, 20),
 Font = Enum.Font.GothamBlack,
-TextSize = 16,
+TextSize = 17,
 })
 textLabel(header, "Name Maker (with World)  |  Toolbox", {
 Position = UDim2.fromOffset(58, 31),
 Size = UDim2.new(1, -260, 0, 16),
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.muted,
 })
 do -- BLOCK logo
@@ -670,7 +672,7 @@ stroke(logoPill, THEME.accent, 0.1, 1.5)
 local logoText = textLabel(logoPill, "RXDZ", {
 Size = UDim2.fromScale(1, 1),
 Font = Enum.Font.GothamBlack,
-TextSize = 14,
+TextSize = 15,
 TextColor3 = Color3.new(1, 1, 1),
 TextXAlignment = Enum.TextXAlignment.Center,
 })
@@ -689,7 +691,7 @@ Text = "X",
 AnchorPoint = Vector2.new(1, 0.5),
 Position = UDim2.new(1, -14, 0.5, 0),
 Size = UDim2.fromOffset(32, 32),
-TextSize = 14,
+TextSize = 15,
 Font = Enum.Font.GothamBlack,
 TextColor3 = THEME.muted,
 }, { fill = THEME.surface, stroke = THEME.line, strokeTransparency = 0.3, radius = 9, hover = THEME.danger })
@@ -764,7 +766,7 @@ textLabel(panel, "Drag the bottom-right corner to resize", {
 AnchorPoint = Vector2.new(0.5, 1),
 Position = UDim2.new(0.5, 0, 1, -10),
 Size = UDim2.fromOffset(400, 14),
-TextSize = 12,
+TextSize = 13,
 TextColor3 = THEME.muted,
 TextXAlignment = Enum.TextXAlignment.Center,
 })
@@ -790,7 +792,7 @@ local toastLabel = textLabel(toast, "", {
 AutomaticSize = Enum.AutomaticSize.XY,
 Size = UDim2.new(),
 Font = Enum.Font.GothamBold,
-TextSize = 14,
+TextSize = 15,
 TextTransparency = 1,
 ZIndex = 31,
 TextXAlignment = Enum.TextXAlignment.Center,
@@ -834,7 +836,7 @@ return textLabel(parent, text, {
 Position = UDim2.fromOffset(16, y),
 Size = UDim2.new(1, -32, 0, 16),
 Font = Enum.Font.GothamBold,
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.muted,
 })
 end
@@ -842,7 +844,7 @@ sectionTitle(form, "NAME", 12)
 local counter = textLabel(form, "0/" .. CONFIG.MaxNameLength, {
 Position = UDim2.fromOffset(16, 12),
 Size = UDim2.new(1, -32, 0, 16),
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.muted,
 TextXAlignment = Enum.TextXAlignment.Right,
 })
@@ -856,7 +858,7 @@ PlaceholderText = "Type your name...",
 PlaceholderColor3 = THEME.muted,
 Text = "",
 TextColor3 = THEME.text,
-TextSize = 18,
+TextSize = 19,
 Font = Enum.Font.GothamBold,
 TextXAlignment = Enum.TextXAlignment.Center,
 }, form)
@@ -912,7 +914,7 @@ local createButton = makeButton(form, {
 Text = "CREATE 3D NAME",
 Position = UDim2.fromOffset(16, 302),
 Size = UDim2.fromOffset(318, 46),
-TextSize = 15,
+TextSize = 16,
 Font = Enum.Font.GothamBlack,
 TextColor3 = THEME.dark,
 }, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 11 })
@@ -928,7 +930,7 @@ textLabel(previewCard, "PREVIEW", {
 Position = UDim2.fromOffset(14, 12),
 Size = UDim2.new(1, -28, 0, 16),
 Font = Enum.Font.GothamBold,
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.muted,
 })
 local stage = new("Frame", {
@@ -989,17 +991,17 @@ loop(previewDual, 2.2, { Offset = Vector2.new(1, 0) }, Enum.EasingStyle.Linear, 
 local infoStyle = textLabel(previewCard, "", {
 Position = UDim2.fromOffset(14, 238),
 Size = UDim2.new(1, -28, 0, 18),
-TextSize = 14,
+TextSize = 15,
 })
 local infoColor = textLabel(previewCard, "", {
 Position = UDim2.fromOffset(14, 262),
 Size = UDim2.new(1, -28, 0, 18),
-TextSize = 14,
+TextSize = 15,
 })
 local infoFont = textLabel(previewCard, "", {
 Position = UDim2.fromOffset(14, 286),
 Size = UDim2.new(1, -28, 0, 18),
-TextSize = 14,
+TextSize = 15,
 })
 local infoDot = new("Frame", {
 AnchorPoint = Vector2.new(1, 0),
@@ -1175,7 +1177,7 @@ Text = "DUAL",
 AnchorPoint = Vector2.new(1, 0),
 Position = UDim2.new(1, -16, 0, 84),
 Size = UDim2.fromOffset(56, 20),
-TextSize = 12,
+TextSize = 13,
 Font = Enum.Font.GothamBold,
 TextColor3 = THEME.text,
 BackgroundColor3 = THEME.surface2,
@@ -1191,7 +1193,7 @@ Text = tostring(slot),
 AnchorPoint = Vector2.new(1, 0),
 Position = UDim2.new(1, -(16 + 56 + 6 + (2 - slot) * 28), 0, 84),
 Size = UDim2.fromOffset(22, 20),
-TextSize = 12,
+TextSize = 13,
 Font = Enum.Font.GothamBold,
 TextColor3 = THEME.text,
 BackgroundColor3 = THEME.surface2,
@@ -1283,7 +1285,7 @@ for index, item in ipairs(FONTS) do
 local button = new("TextButton", {
 Text = item.title,
 Size = UDim2.fromOffset(100, 30),
-TextSize = 12,
+TextSize = 13,
 Font = Enum.Font.GothamBold,
 TextColor3 = THEME.text,
 BackgroundColor3 = THEME.surface2,
@@ -1359,7 +1361,7 @@ for index, item in ipairs(items) do
 local button = new("TextButton", {
 Text = item.title,
 Size = UDim2.fromOffset(126, 30),
-TextSize = 13,
+TextSize = 14,
 Font = Enum.Font.GothamBold,
 TextColor3 = THEME.text,
 BackgroundColor3 = THEME.surface2,
@@ -1431,7 +1433,7 @@ end
 textLabel(studioCard, "These options apply to the next name you create.", {
 Position = UDim2.fromOffset(16, 330),
 Size = UDim2.new(1, -32, 0, 14),
-TextSize = 12,
+TextSize = 13,
 TextColor3 = THEME.muted,
 })
 local installButton = makeButton(studioCard, {
@@ -1439,7 +1441,7 @@ Text = "Install effects script",
 AnchorPoint = Vector2.new(1, 0),
 Position = UDim2.new(1, -16, 0, 322),
 Size = UDim2.fromOffset(196, 28),
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.accent,
 }, { fill = THEME.surface2, stroke = THEME.accent, strokeTransparency = 0.6, radius = 8 })
 installButton.Activated:Connect(function()
@@ -2620,12 +2622,12 @@ textLabel(listPage, "Saved names", {
 Position = UDim2.fromOffset(4, 0),
 Size = UDim2.new(1, -8, 0, 22),
 Font = Enum.Font.GothamBold,
-TextSize = 15,
+TextSize = 16,
 })
 local listCount = textLabel(listPage, "", {
 Position = UDim2.fromOffset(4, 0),
 Size = UDim2.new(1, -8, 0, 22),
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.muted,
 TextXAlignment = Enum.TextXAlignment.Right,
 })
@@ -2652,7 +2654,7 @@ new("UIListLayout", { Padding = UDim.new(0, 7), SortOrder = Enum.SortOrder.Layou
 local emptyState = textLabel(listPage, "No saved names yet" .. utf8.char(10) .. "Create your first one from the Create tab", {
 Position = UDim2.fromOffset(0, 28),
 Size = UDim2.new(1, 0, 1, -28),
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.muted,
 TextWrapped = true,
 TextXAlignment = Enum.TextXAlignment.Center,
@@ -2737,7 +2739,7 @@ textLabel(row, tostring(entry.name), {
 Position = UDim2.fromOffset(60, 10),
 Size = UDim2.new(1, -230, 0, 24),
 Font = Enum.Font.GothamBold,
-TextSize = 18,
+TextSize = 19,
 TextTruncate = Enum.TextTruncate.AtEnd,
 })
 local details = fontOf(entry.font).title .. "  |  " .. (STYLE_TITLES[entry.style] or "Plastic")
@@ -2755,7 +2757,7 @@ textLabel(row, details, {
 Position = UDim2.fromOffset(60, 35),
 Size = UDim2.new(1, -230, 0, 18),
 TextTruncate = Enum.TextTruncate.AtEnd,
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.muted,
 })
 local deleteButton = makeButton(row, {
@@ -2763,7 +2765,7 @@ Text = "Delete",
 AnchorPoint = Vector2.new(1, 0.5),
 Position = UDim2.new(1, -10, 0.5, 0),
 Size = UDim2.fromOffset(72, 32),
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.danger,
 }, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
 local moveButton = makeButton(row, {
@@ -2771,7 +2773,7 @@ Text = "Move here",
 AnchorPoint = Vector2.new(1, 0.5),
 Position = UDim2.new(1, -90, 0.5, 0),
 Size = UDim2.fromOffset(82, 32),
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.accent,
 }, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 8 })
 moveButton.Activated:Connect(function()
@@ -2803,7 +2805,7 @@ Text = "Clear all",
 AnchorPoint = Vector2.new(1, 0),
 Position = UDim2.new(1, -62, 0, 0),
 Size = UDim2.fromOffset(74, 22),
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.danger,
 }, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 7 })
 local clearArmed = false
@@ -2921,7 +2923,7 @@ TextXAlignment = Enum.TextXAlignment.Center,
 textLabel(aboutLeft, "Creator of this system", {
 Position = UDim2.fromOffset(0, 192),
 Size = UDim2.new(1, 0, 0, 16),
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.muted,
 TextXAlignment = Enum.TextXAlignment.Center,
 })
@@ -2937,7 +2939,7 @@ stroke(communityPill, THEME.accent, 0.55, 1)
 textLabel(communityPill, CONFIG.Community, {
 Size = UDim2.fromScale(1, 1),
 Font = Enum.Font.GothamBold,
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.accent,
 TextXAlignment = Enum.TextXAlignment.Center,
 })
@@ -2953,7 +2955,7 @@ textLabel(aboutRight, "CONNECT WITH ME", {
 Position = UDim2.fromOffset(16, 14),
 Size = UDim2.new(1, -32, 0, 16),
 Font = Enum.Font.GothamBold,
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.muted,
 })
 local function copyLink(link, doneMessage)
@@ -2980,7 +2982,7 @@ corner(icon, 11)
 textLabel(icon, letter, {
 Size = UDim2.fromScale(1, 1),
 Font = Enum.Font.GothamBlack,
-TextSize = 19,
+TextSize = 20,
 TextColor3 = Color3.new(1, 1, 1),
 TextXAlignment = Enum.TextXAlignment.Center,
 })
@@ -2988,12 +2990,12 @@ textLabel(button, title, {
 Position = UDim2.fromOffset(68, 14),
 Size = UDim2.new(1, -150, 0, 20),
 Font = Enum.Font.GothamBold,
-TextSize = 16,
+TextSize = 17,
 })
 textLabel(button, sub, {
 Position = UDim2.fromOffset(68, 36),
 Size = UDim2.new(1, -150, 0, 16),
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.muted,
 })
 local chip = new("Frame", {
@@ -3008,7 +3010,7 @@ corner(chip, 8)
 textLabel(chip, "COPY", {
 Size = UDim2.fromScale(1, 1),
 Font = Enum.Font.GothamBold,
-TextSize = 13,
+TextSize = 14,
 TextXAlignment = Enum.TextXAlignment.Center,
 })
 button.Activated:Connect(function()
@@ -3023,7 +3025,7 @@ local supportButton = makeButton(aboutRight, {
 Text = "Support  " .. tostring(pass.amount) .. " R$",
 Position = UDim2.fromOffset(16 + (index - 1) * 160, 256),
 Size = UDim2.fromOffset(144, 34),
-TextSize = 14,
+TextSize = 15,
 Font = Enum.Font.GothamBlack,
 TextColor3 = THEME.dark,
 }, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 10 })
@@ -3034,7 +3036,7 @@ end
 textLabel(aboutRight, "Tap a card or a Support button to copy its link, then paste it in your browser.", {
 Position = UDim2.fromOffset(16, 298),
 Size = UDim2.new(1, -32, 0, 22),
-TextSize = 12,
+TextSize = 13,
 TextColor3 = THEME.muted,
 TextWrapped = true,
 })
@@ -3043,7 +3045,7 @@ AnchorPoint = Vector2.new(0, 1),
 Position = UDim2.new(0, 16, 1, -12),
 Size = UDim2.new(1, -32, 0, 16),
 Font = Enum.Font.GothamBold,
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.accent,
 })
 task.spawn(function()
@@ -3103,7 +3105,7 @@ local clockLabel = textLabel(card, "12:00", {
 Position = UDim2.fromOffset(16, 10),
 Size = UDim2.new(1, -32, 0, 20),
 Font = Enum.Font.GothamBlack,
-TextSize = 17,
+TextSize = 18,
 TextColor3 = THEME.accent,
 TextXAlignment = Enum.TextXAlignment.Right,
 })
@@ -3156,7 +3158,7 @@ for index, item in ipairs(PRESETS) do
 local button = new("TextButton", {
 Text = item[1],
 Size = UDim2.fromOffset(126, 34),
-TextSize = 14,
+TextSize = 15,
 Font = Enum.Font.GothamBold,
 TextColor3 = THEME.text,
 BackgroundColor3 = THEME.surface2,
@@ -3205,13 +3207,13 @@ ZIndex = 3,
 }, hit)
 corner(knob, 12)
 stroke(knob, THEME.text, 0.3, 2)
-textLabel(card, "00", { Position = UDim2.fromOffset(16, 162), Size = UDim2.fromOffset(40, 14), TextSize = 12, TextColor3 = THEME.muted })
-textLabel(card, "12", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 162), Size = UDim2.fromOffset(40, 14), TextSize = 12, TextColor3 = THEME.muted, TextXAlignment = Enum.TextXAlignment.Center })
-textLabel(card, "24", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 162), Size = UDim2.fromOffset(40, 14), TextSize = 12, TextColor3 = THEME.muted, TextXAlignment = Enum.TextXAlignment.Right })
+textLabel(card, "00", { Position = UDim2.fromOffset(16, 162), Size = UDim2.fromOffset(40, 14), TextSize = 13, TextColor3 = THEME.muted })
+textLabel(card, "12", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 162), Size = UDim2.fromOffset(40, 14), TextSize = 13, TextColor3 = THEME.muted, TextXAlignment = Enum.TextXAlignment.Center })
+textLabel(card, "24", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -16, 0, 162), Size = UDim2.fromOffset(40, 14), TextSize = 13, TextColor3 = THEME.muted, TextXAlignment = Enum.TextXAlignment.Right })
 textLabel(card, "The time is applied to the sky of your project and is saved with it. Save the project after changing it.", {
 Position = UDim2.fromOffset(16, 196),
 Size = UDim2.new(1, -32, 0, 34),
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.muted,
 TextWrapped = true,
 TextYAlignment = Enum.TextYAlignment.Top,
@@ -3634,6 +3636,22 @@ item.Archivable = true
 end)
 end
 end
+function H.lowestBottom(root)
+local low = nil
+local list = root:GetDescendants()
+table.insert(list, root)
+for _, d in ipairs(list) do
+if d:IsA("BasePart") and d.Transparency < 0.95 then
+local cf, sz = d.CFrame, d.Size
+local ext = (math.abs(cf.RightVector.Y) * sz.X + math.abs(cf.UpVector.Y) * sz.Y + math.abs(cf.LookVector.Y) * sz.Z) / 2
+local bottom = cf.Position.Y - ext
+if not low or bottom < low then
+low = bottom
+end
+end
+end
+return low
+end
 local function placeRoot(root, cf)
 if cf then
 pcall(function()
@@ -3644,11 +3662,11 @@ local point = spawnPoint()
 pcall(function()
 if root:IsA("Model") then
 local boxCFrame, size = root:GetBoundingBox()
-local pivot = root:GetPivot()
-local offset = pivot.Position - boxCFrame.Position
-root:PivotTo(CFrame.new(point + Vector3.new(0, size.Y / 2, 0) + offset) * pivot.Rotation)
+local low = H.lowestBottom(root)
+local shiftY = (point.Y + 0.1) - (low or (boxCFrame.Position.Y - size.Y / 2))
+root:PivotTo(root:GetPivot() + Vector3.new(point.X - boxCFrame.Position.X, shiftY, point.Z - boxCFrame.Position.Z))
 else
-root.CFrame = CFrame.new(point + Vector3.new(0, root.Size.Y / 2, 0)) * root.CFrame.Rotation
+root.CFrame = CFrame.new(point + Vector3.new(0, root.Size.Y / 2 + 0.1, 0)) * root.CFrame.Rotation
 end
 end)
 end
@@ -3753,16 +3771,6 @@ if switches >= 5 and switches / #name >= 0.25 then
 return true
 end
 end
--- obfuscated loaders (only when the editor lets us read the source)
-local ok, source = pcall(function()
-return object.Source
-end)
-if ok and type(source) == "string" and #source > 0 then
-if string.find(source, "loadstring", 1, true) or string.find(source, "getfenv", 1, true)
-or string.find(source, "require%(%s*%d%d%d%d%d+%s*%)") then
-return true
-end
-end
 return false
 end
 function H.cleanScripts(root)
@@ -3777,6 +3785,34 @@ end)
 end
 end
 return removed
+end
+function H.preload(objects)
+local list = {}
+for _, object in ipairs(objects) do
+local all = object:GetDescendants()
+table.insert(all, object)
+for _, d in ipairs(all) do
+if d:IsA("MeshPart") or d:IsA("SpecialMesh") or d:IsA("Decal") or d:IsA("Texture") or d:IsA("SurfaceAppearance") then
+table.insert(list, d)
+end
+end
+end
+if #list == 0 then
+return
+end
+local done = false
+task.spawn(function()
+pcall(function()
+game:GetService("ContentProvider"):PreloadAsync(list)
+end)
+done = true
+end)
+local waited = 0
+while not done and waited < 10 do
+task.wait(0.1)
+waited += 0.1
+end
+task.wait(0.3)
 end
 function H.cleanSounds(root)
 task.spawn(function()
@@ -3922,6 +3958,7 @@ local objects = loadAsset(assetId)
 if not objects then
 return false, "Could not load asset " .. tostring(assetId)
 end
+H.preload(objects)
 local hasSpatial = false
 for _, object in ipairs(objects) do
 if object:IsA("Model") or object:IsA("BasePart") then
@@ -4084,7 +4121,7 @@ PlaceholderText = placeholder,
 PlaceholderColor3 = THEME.muted,
 Text = "",
 TextColor3 = THEME.text,
-TextSize = 14,
+TextSize = 15,
 Font = Enum.Font.GothamBold,
 TextXAlignment = Enum.TextXAlignment.Left,
 TextTruncate = Enum.TextTruncate.AtEnd,
@@ -4110,7 +4147,7 @@ stroke(side, THEME.line, 0.5, 1)
 textLabel(side, "TOOLBOX", {
 Position = UDim2.fromOffset(14, 10),
 Size = UDim2.new(1, -28, 0, 14),
-TextSize = 12,
+TextSize = 13,
 Font = Enum.Font.GothamBlack,
 TextColor3 = THEME.muted,
 })
@@ -4165,7 +4202,7 @@ local badge = textLabel(button, "", {
 AnchorPoint = Vector2.new(1, 0),
 Position = UDim2.new(1, -8, 0, 0),
 Size = UDim2.fromOffset(28, 28),
-TextSize = 12,
+TextSize = 13,
 TextColor3 = THEME.muted,
 TextXAlignment = Enum.TextXAlignment.Right,
 })
@@ -4239,7 +4276,7 @@ local sortButton = makeButton(main, {
 Text = SORTS[sortIndex][1],
 Position = UDim2.fromOffset(224, 0),
 Size = UDim2.fromOffset(96, 34),
-TextSize = 14,
+TextSize = 15,
 }, { fill = THEME.surface2, radius = 9 })
 sortButton.Activated:Connect(function()
 sortIndex = sortIndex % #SORTS + 1
@@ -4252,7 +4289,7 @@ local undoButton = makeButton(main, {
 Text = "Undo",
 Position = UDim2.fromOffset(324, 0),
 Size = UDim2.fromOffset(58, 34),
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.accent,
 }, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 9 })
 undoButton.Activated:Connect(function()
@@ -4278,7 +4315,7 @@ local clearButton = makeButton(main, {
 Text = "Clear",
 Position = UDim2.fromOffset(386, 0),
 Size = UDim2.fromOffset(66, 34),
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.danger,
 }, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 9 })
 local clearArmed = false
@@ -4318,7 +4355,7 @@ local button = makeButton(main, {
 Text = "",
 Position = UDim2.fromOffset(x, 40),
 Size = UDim2.fromOffset(146, 28),
-TextSize = 12,
+TextSize = 13,
 }, { fill = THEME.surface2, radius = 8 })
 local function paint()
 local text, good = getText()
@@ -4375,7 +4412,7 @@ local typeButton = makeButton(addPanel, {
 Text = "Type: " .. ADD_TYPES[addTypeIndex][1],
 Position = UDim2.fromOffset(238, 4),
 Size = UDim2.fromOffset(110, 30),
-TextSize = 13,
+TextSize = 14,
 }, { fill = THEME.surface2, radius = 8 })
 typeButton.Activated:Connect(function()
 addTypeIndex = addTypeIndex % #ADD_TYPES + 1
@@ -4385,7 +4422,7 @@ local addButton = makeButton(addPanel, {
 Text = "ADD",
 Position = UDim2.fromOffset(352, 4),
 Size = UDim2.fromOffset(96, 30),
-TextSize = 14,
+TextSize = 15,
 Font = Enum.Font.GothamBlack,
 TextColor3 = THEME.dark,
 }, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 8 })
@@ -4441,7 +4478,7 @@ local statusLabel = textLabel(main, "", {
 Position = UDim2.fromOffset(0, 74),
 Size = UDim2.fromOffset(452, 318),
 Font = Enum.Font.GothamBold,
-TextSize = 15,
+TextSize = 16,
 TextColor3 = THEME.muted,
 TextWrapped = true,
 TextXAlignment = Enum.TextXAlignment.Center,
@@ -4497,7 +4534,7 @@ textLabel(card, item.name, {
 Position = UDim2.fromOffset(8, 91),
 Size = UDim2.new(1, -16, 0, 17),
 Font = Enum.Font.GothamBlack,
-TextSize = 14,
+TextSize = 15,
 TextTruncate = Enum.TextTruncate.AtEnd,
 })
 local creator = tostring(item.creator or "")
@@ -4520,7 +4557,7 @@ local insertButton = makeButton(card, {
 Text = label,
 Position = UDim2.fromOffset(6, 126),
 Size = UDim2.fromOffset(insertWidth, 26),
-TextSize = 13,
+TextSize = 14,
 Font = Enum.Font.GothamBlack,
 TextColor3 = THEME.dark,
 }, ACCENT_STYLE)
@@ -4529,7 +4566,7 @@ local favButton = makeButton(card, {
 Text = isFav and STAR_ON or STAR_OFF,
 Position = UDim2.fromOffset(6 + insertWidth + 4, 126),
 Size = UDim2.fromOffset(26, 26),
-TextSize = 15,
+TextSize = 16,
 TextColor3 = isFav and THEME.accent or THEME.muted,
 }, { fill = THEME.surface, radius = 8 })
 local working = false
@@ -4578,7 +4615,7 @@ local deleteButton = makeButton(card, {
 Text = "X",
 Position = UDim2.fromOffset(6 + insertWidth + 4 + 30, 126),
 Size = UDim2.fromOffset(26, 26),
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.danger,
 }, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
 local armed = false
@@ -4623,14 +4660,14 @@ local goButton = makeButton(card, {
 Text = "Go",
 Position = UDim2.fromOffset(70, 126),
 Size = UDim2.fromOffset(32, 26),
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.accent,
 }, { fill = THEME.surface, radius = 8 })
 local deleteButton = makeButton(card, {
 Text = "X",
 Position = UDim2.fromOffset(106, 126),
 Size = UDim2.fromOffset(26, 26),
-TextSize = 13,
+TextSize = 14,
 TextColor3 = THEME.danger,
 }, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
 selectButton.Activated:Connect(function()
@@ -4757,7 +4794,7 @@ if cat.typeId and (cursor or loading or loadError) then
 local more = makeButton(grid, {
 Text = loading and "Loading..." or (loadError and "Retry" or "Load more"),
 LayoutOrder = 99999,
-TextSize = 14,
+TextSize = 15,
 Font = Enum.Font.GothamBlack,
 TextColor3 = THEME.accent,
 }, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 10 })
@@ -4780,6 +4817,48 @@ toast("Toolbox restored " .. count .. " items", true)
 end
 paintChips()
 lastKey = ctx.placeKey()
+task.spawn(function()
+local strikes = {}
+while genv.DZHUP_TBToken == token do
+task.wait(1)
+pcall(function()
+local floorY = ctx.findSpawn().Y - 35
+for _, rec in ipairs(records()) do
+if rec.typeId == 10 then
+local inst = findByUid(rec.uid)
+if inst and (inst:IsA("Model") or inst:IsA("BasePart")) then
+local pivot = inst:GetPivot()
+if pivot.Position.Y < floorY then
+strikes[rec.uid] = (strikes[rec.uid] or 0) + 1
+local cf = cfFromRecord(rec)
+if cf then
+inst:PivotTo(cf + Vector3.new(0, 3, 0))
+end
+local parts = inst:GetDescendants()
+table.insert(parts, inst)
+for _, d in ipairs(parts) do
+if d:IsA("BasePart") then
+d.AssemblyLinearVelocity = Vector3.zero
+d.AssemblyAngularVelocity = Vector3.zero
+if strikes[rec.uid] >= 3 then
+d.Anchored = true
+end
+end
+end
+if strikes[rec.uid] >= 3 then
+rec.anchorMode = "all"
+persist()
+toast(rec.name .. " kept falling, so it was anchored", false)
+else
+toast(rec.name .. " fell and was put back", false)
+end
+end
+end
+end
+end
+end)
+end
+end)
 while genv.DZHUP_TBToken == token do
 task.wait(1.5)
 local key = ctx.placeKey()
@@ -4832,11 +4911,15 @@ local function showSub(index)
 subIndex = index
 for i, sub in ipairs(SUBS) do
 local active = i == index
+if active and not sub.page.Visible then
+sub.page.Position = UDim2.fromOffset(0, 10)
+tween(sub.page, 0.28, { Position = UDim2.fromOffset(0, 0) }, Enum.EasingStyle.Quint)
+end
 sub.page.Visible = active
 tween(sub.button, 0.14, { BackgroundColor3 = active and THEME.accent or THEME.surface2 })
 sub.button.TextColor3 = active and THEME.dark or THEME.text
 end
-if index == 3 then
+if SUBS[index].key == "saved" then
 renderList()
 end
 end
@@ -4846,7 +4929,7 @@ Text = sub.title,
 Position = UDim2.fromOffset((index - 1) * 110, 0),
 Size = UDim2.fromOffset(104, 30),
 Font = Enum.Font.GothamBlack,
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.text,
 BackgroundColor3 = THEME.surface2,
 AutoButtonColor = false,
@@ -4914,7 +4997,7 @@ BackgroundTransparency = 1,
 AutoButtonColor = false,
 Text = def.title,
 Font = Enum.Font.GothamBlack,
-TextSize = 14,
+TextSize = 15,
 TextColor3 = THEME.text,
 ZIndex = 3,
 }, tabScroll)
@@ -4926,6 +5009,10 @@ end -- BLOCK modules
 local function switchTab(index, instant)
 currentTab = index
 for i, def in ipairs(H.modules) do
+if i == index and not def.page.Visible and not instant then
+def.page.Position = UDim2.fromOffset(0, 12)
+tween(def.page, 0.3, { Position = UDim2.fromOffset(0, 0) }, Enum.EasingStyle.Quint)
+end
 def.page.Visible = i == index
 if def.button then
 def.button.TextColor3 = i == index and THEME.dark or THEME.muted
