@@ -2,9 +2,8 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
-v20: Models now arrive COMPLETE: the store file is downloaded and the code of every script is restored (like Studio Lite's own Toolbox: Loading model / Extracting).
-Toolbox options row removed, cleaner design, Insert-by-ID bar, big preview page with Copy ID.
-
+v21: Models are now left exactly where the asset puts them (no pulling in front of the camera); script code is restored from the file, with a decompile fallback and a clear report in Output.
+v20: Models arrive complete: the store file is downloaded and the code of every script is restored. Toolbox options row removed, cleaner design.
 v19: Toolbox inserts items untouched (nothing is deleted, anchored or replaced).
 
 v18: Auto-removes blocked texture overlays, replaces blocked MeshParts with physics-safe blocks, and relocates a bundled A-Chassis Tune module when found; missing tune is safely anchored and reported.
@@ -3683,26 +3682,6 @@ for _, r in ipairs(roots) do
 r:PivotTo(delta * r:GetPivot())
 end
 end)
-else
-local point = spawnPoint()
-pcall(function()
-local sumX, sumZ, low = 0, 0, nil
-for _, r in ipairs(roots) do
-local center = r:IsA("Model") and (r:GetBoundingBox()) or r.CFrame
-sumX += center.Position.X
-sumZ += center.Position.Z
-local bottom = H.lowestBottom(r)
-if bottom and (not low or bottom < low) then
-low = bottom
-end
-end
-local n = #roots
-low = low or (first:GetPivot().Position.Y - 2)
-local shift = Vector3.new(point.X - sumX / n, (point.Y + 0.1) - low, point.Z - sumZ / n)
-for _, r in ipairs(roots) do
-r:PivotTo(r:GetPivot() + shift)
-end
-end)
 end
 for _, r in ipairs(roots) do
 r.Parent = svc("Workspace")
@@ -4101,16 +4080,36 @@ if type(fn) == "function" and pcall(fn, 8) then
 break
 end
 end
-local good, bad = 0, 0
+local good, bad, found = 0, 0, 0
+local covered = {}
 for key, src in pairs(sources) do
+found += 1
 local inst = idx[key]
 if inst and inst:IsA("LuaSourceContainer") then
+covered[inst] = true
 if setSource(inst, src) then
 good += 1
 else
 bad += 1
 end
 end
+end
+local fallback = 0
+local decompileFn = genv.decompile or _G.decompile
+if type(decompileFn) == "function" then
+for _, inst in pairs(idx) do
+if inst:IsA("LuaSourceContainer") and not covered[inst] then
+local ok2, code = pcall(decompileFn, inst)
+if ok2 and type(code) == "string" and #code > 20 and setSource(inst, code) then
+fallback += 1
+good += 1
+end
+end
+end
+end
+warn("[DZHUP Toolbox] script code: " .. found .. " found in the file, " .. good .. " applied (" .. fallback .. " by decompile), " .. bad .. " failed")
+if found == 0 and fallback == 0 then
+return 0, 0, "the file contains no readable script code"
 end
 return good, bad
 end
@@ -4189,6 +4188,9 @@ decal.Texture = texture
 end
 decal.Face = Enum.NormalId.Front
 decal.Parent = part
+if not cf then
+part.Position = spawnPoint() + Vector3.new(0, 3, 0)
+end
 placeRoots({ part }, cf)
 tag(part, rec)
 return true, "Decal inserted: " .. rec.name, part
@@ -4212,6 +4214,9 @@ special.Parent = mesh
 end
 mesh.Name = rec.name
 mesh.Anchored = true
+if not cf then
+mesh.Position = spawnPoint() + Vector3.new(0, 3, 0)
+end
 placeRoots({ mesh }, cf)
 tag(mesh, rec)
 return true, "Mesh inserted: " .. rec.name, mesh
