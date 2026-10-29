@@ -2,8 +2,9 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
-v21: Models are now left exactly where the asset puts them (no pulling in front of the camera); script code is restored from the file, with a decompile fallback and a clear report in Output.
-v20: Models arrive complete: the store file is downloaded and the code of every script is restored. Toolbox options row removed, cleaner design.
+v22: Placing in front of the camera is back. Scripts are also registered in Studio Lite's own script table (searched at runtime) and the scan is printed in Output.
+v21: script code is restored from the file, with a decompile fallback and a clear report in Output.
+v20: Models arrive complete: the store file is downloaded. Toolbox options row removed, cleaner design.
 v19: Toolbox inserts items untouched (nothing is deleted, anchored or replaced).
 
 v18: Auto-removes blocked texture overlays, replaces blocked MeshParts with physics-safe blocks, and relocates a bundled A-Chassis Tune module when found; missing tune is safely anchored and reported.
@@ -3682,6 +3683,26 @@ for _, r in ipairs(roots) do
 r:PivotTo(delta * r:GetPivot())
 end
 end)
+else
+local point = spawnPoint()
+pcall(function()
+local sumX, sumZ, low = 0, 0, nil
+for _, r in ipairs(roots) do
+local center = r:IsA("Model") and (r:GetBoundingBox()) or r.CFrame
+sumX += center.Position.X
+sumZ += center.Position.Z
+local bottom = H.lowestBottom(r)
+if bottom and (not low or bottom < low) then
+low = bottom
+end
+end
+local n = #roots
+low = low or (first:GetPivot().Position.Y - 2)
+local shift = Vector3.new(point.X - sumX / n, (point.Y + 0.1) - low, point.Z - sumZ / n)
+for _, r in ipairs(roots) do
+r:PivotTo(r:GetPivot() + shift)
+end
+end)
 end
 for _, r in ipairs(roots) do
 r.Parent = svc("Workspace")
@@ -3813,6 +3834,7 @@ end)
 end
 -- v20: the store file is downloaded and the CODE of every script is read from it,
 -- so models arrive complete (cars, doors...) and not as empty shells.
+local appliedSource = setmetatable({}, { __mode = "k" })
 local function u32(s, p)
 local a, b, c, d = string.byte(s, p, p + 3)
 return a + b * 256 + c * 65536 + d * 16777216
@@ -4089,6 +4111,7 @@ if inst and inst:IsA("LuaSourceContainer") then
 covered[inst] = true
 if setSource(inst, src) then
 good += 1
+appliedSource[inst] = src
 else
 bad += 1
 end
@@ -4103,6 +4126,7 @@ local ok2, code = pcall(decompileFn, inst)
 if ok2 and type(code) == "string" and #code > 20 and setSource(inst, code) then
 fallback += 1
 good += 1
+appliedSource[inst] = code
 end
 end
 end
@@ -4112,6 +4136,93 @@ if found == 0 and fallback == 0 then
 return 0, 0, "the file contains no readable script code"
 end
 return good, bad
+end
+-- Looks for the script table that Studio Lite itself uses and registers the inserted scripts there
+function H.registerScripts(roots)
+local gc = genv.getgc or _G.getgc
+if type(gc) ~= "function" then
+return 0, "getgc is not available in this executor"
+end
+local scripts = {}
+for _, r in ipairs(roots) do
+if r:IsA("LuaSourceContainer") then
+table.insert(scripts, r)
+end
+for _, d in ipairs(r:GetDescendants()) do
+if d:IsA("LuaSourceContainer") then
+table.insert(scripts, d)
+end
+end
+end
+if #scripts == 0 then
+return 0
+end
+local ok, list = pcall(gc, true)
+if not ok or type(list) ~= "table" then
+return 0, "getgc failed"
+end
+local targets = {}
+for _, tbl in ipairs(list) do
+if type(tbl) == "table" then
+local instKeys, strKeys, total = 0, 0, 0
+local sampleKey, sampleVal = nil, nil
+pcall(function()
+for k, v in pairs(tbl) do
+total += 1
+if total > 3000 then
+break
+end
+if typeof(k) == "Instance" then
+if k:IsA("LuaSourceContainer") and type(v) == "string" then
+instKeys += 1
+sampleKey, sampleVal = k, v
+end
+elseif type(k) == "string" and #k > 6 and type(v) == "string"
+and (string.sub(k, 1, 12) == "ModuleScript" or string.sub(k, 1, 11) == "LocalScript" or string.sub(k, 1, 6) == "Script") then
+strKeys += 1
+sampleKey, sampleVal = k, v
+end
+end
+end)
+if instKeys > 0 or strKeys > 0 then
+table.insert(targets, { tbl = tbl, inst = instKeys, str = strKeys, total = total, key = sampleKey })
+end
+end
+end
+warn("[DZHUP Toolbox] script registry scan: " .. #list .. " tables checked, " .. #targets .. " candidate(s)")
+local written = 0
+for index, target in ipairs(targets) do
+if index <= 6 then
+warn("[DZHUP Toolbox]   candidate " .. index .. ": " .. target.inst .. " script keys, " .. target.str .. " name keys, " .. target.total .. " entries, sample key = " .. tostring(target.key))
+end
+if index <= 3 then
+for _, scriptObject in ipairs(scripts) do
+local src = appliedSource[scriptObject]
+if not src then
+pcall(function()
+src = scriptObject.Source
+end)
+end
+if type(src) == "string" and src ~= "" then
+local okSet = pcall(function()
+if target.inst > 0 then
+target.tbl[scriptObject] = src
+end
+if target.str > 0 then
+target.tbl[scriptObject.ClassName .. scriptObject.Name] = src
+end
+end)
+if okSet then
+written += 1
+end
+end
+end
+end
+end
+if #targets == 0 then
+return 0, "Studio Lite's script table was not found"
+end
+return written
 end
 local function createItem(rec, restoringNow)
 local assetId = tonumber(string.match(tostring(rec.id), "%d+"))
@@ -4352,6 +4463,7 @@ end
 tag(root, rec)
 end
 H.softPreload(spatialRoots)
+local regCount, regNote = H.registerScripts(spatialRoots)
 local message = "Inserted: " .. rec.name
 if vehicle then
 message = message .. " (vehicle)"
@@ -4371,6 +4483,11 @@ end
 if srcGood == 0 and srcBad == 0 and srcNote then
 message = message .. " (script code not read: " .. srcNote .. ")"
 end
+end
+if regCount > 0 then
+message = message .. " (registered " .. regCount .. " scripts in Studio Lite)"
+elseif regNote and scriptCount > 0 then
+message = message .. " (" .. regNote .. ")"
 end
 if removedBad > 0 then
 message = message .. " (Safe: " .. removedBad .. " suspicious items removed)"
