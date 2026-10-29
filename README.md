@@ -2,7 +2,7 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
-v15: Toolbox waits for mesh/texture preload completion (up to 35s) before insertion and reports failed asset requests; UI text is globally enlarged for readability.
+v16: Parent model first, temporarily anchor it, then preload visual dependencies from Workspace before releasing physics; sounds excluded from visual failure counts. UI text enlarged.
 v14: Toolbox now preloads meshes before placing, puts the lowest part on the ground, never deletes real car scripts, and puts back items that fall through the floor.
 
 v13: items no longer fall in Play mode (Anchor defaults to Smart, old items get anchored); World moved inside Names;
@@ -3792,12 +3792,18 @@ end
 return removed
 end
 function H.preload(objects)
--- Do not insert a model merely because a short background preload task timed out.
--- PreloadAsync reports each request; wait for completion (up to a generous limit)
--- before the model is parented into Workspace and begins simulating.
+-- Preload visual geometry only after the asset is parented in Workspace.
+-- Roblox may reject unrelated audio permissions; sounds are intentionally excluded.
 local list = {}
 local seen = {}
-for _, object in ipairs(objects) do
+local roots = {}
+if typeof(objects) == "Instance" then
+roots[1] = objects
+elseif type(objects) == "table" then
+roots = objects
+end
+for _, object in ipairs(roots) do
+if object and typeof(object) == "Instance" then
 local all = object:GetDescendants()
 table.insert(all, object)
 for _, d in ipairs(all) do
@@ -3805,6 +3811,7 @@ if d:IsA("MeshPart") or d:IsA("SpecialMesh") or d:IsA("Decal") or d:IsA("Texture
 if not seen[d] then
 seen[d] = true
 table.insert(list, d)
+end
 end
 end
 end
@@ -3828,17 +3835,17 @@ end
 finished = true
 end)
 local waited = 0
-local timeout = 35
+local timeout = 45
 while not finished and waited < timeout do
 task.wait(0.1)
 waited += 0.1
 end
 if not finished then
-warn("[DZHUP Toolbox] Asset preload still pending after " .. tostring(timeout) .. " seconds; some Creator Store dependencies may be unavailable.")
+warn("[DZHUP Toolbox] Visual asset preload is still pending after " .. tostring(timeout) .. " seconds.")
 return false, failed
 end
 if failed > 0 then
-warn("[DZHUP Toolbox] " .. tostring(failed) .. " asset request(s) failed to preload.")
+warn("[DZHUP Toolbox] " .. tostring(failed) .. " visual asset request(s) failed; check asset permissions/availability.")
 end
 return failed == 0, failed
 end
@@ -3986,7 +3993,6 @@ local objects = loadAsset(assetId)
 if not objects then
 return false, "Could not load asset " .. tostring(assetId)
 end
-local preloadOK, preloadFailed = H.preload(objects)
 local hasSpatial = false
 for _, object in ipairs(objects) do
 if object:IsA("Model") or object:IsA("BasePart") then
@@ -4079,11 +4085,29 @@ end
 end
 end
 placeRoot(root, cf)
+-- Keep the placed model from falling while its own visual dependencies stream in.
+local anchorStates = {}
+for _, part in ipairs(root:GetDescendants()) do
+if part:IsA("BasePart") then
+anchorStates[part] = part.Anchored
+part.Anchored = true
+end
+end
+if root:IsA("BasePart") then
+anchorStates[root] = root.Anchored
+root.Anchored = true
+end
+local preloadOK, preloadFailed = H.preload(root)
+for part, wasAnchored in pairs(anchorStates) do
+if part.Parent then
+part.Anchored = wasAnchored
+end
+end
 tag(root, rec)
 H.cleanSounds(root)
 local message = "Inserted: " .. rec.name
 if preloadOK == false then
-message = message .. " (warning: some assets may still be loading or unavailable: " .. tostring(preloadFailed or 0) .. ")"
+message = message .. " (warning: " .. tostring(preloadFailed or 0) .. " visual resources unavailable; check permissions)"
 end
 if badRemoved > 0 then
 message = message .. " (" .. badRemoved .. " suspicious scripts removed)"
