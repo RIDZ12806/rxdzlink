@@ -3388,4 +3388,1854 @@ return string.sub(string.gsub(HttpService:GenerateGUID(false), "-", ""), 1, 12)
 end
 local function findByUid(uid)
 local parents = { getFolder(), game:GetService("Lighting") }
-for _, parent in ipairs(parent
+for _, parent in ipairs(parents) do
+for _, child in ipairs(parent:GetChildren()) do
+if child:GetAttribute(UID_ATTR) == uid then
+return child
+end
+end
+end
+return nil
+end
+local function removeRecord(rec)
+local inst = findByUid(rec.uid)
+if inst then
+pcall(function()
+inst:Destroy()
+end)
+end
+local list = records()
+for i, item in ipairs(list) do
+if item == rec or item.uid == rec.uid then
+table.remove(list, i)
+break
+end
+end
+end
+local function httpGet(url)
+local lastError = "no http function"
+local req = genv.request or genv.http_request or (type(genv.syn) == "table" and genv.syn.request) or nil
+if type(req) == "function" then
+local ok, response = pcall(req, { Url = url, Method = "GET", Headers = { Accept = "application/json" } })
+if ok and type(response) == "table" and type(response.Body) == "string" and #response.Body > 0 then
+if response.StatusCode == nil or response.StatusCode == 200 then
+return response.Body
+end
+lastError = "HTTP " .. tostring(response.StatusCode)
+else
+lastError = tostring(response)
+end
+end
+local ok, body = pcall(function()
+return game:HttpGet(url)
+end)
+if ok and type(body) == "string" and #body > 0 then
+return body
+end
+local ok2, body2 = pcall(function()
+return HttpService:GetAsync(url)
+end)
+if ok2 and type(body2) == "string" and #body2 > 0 then
+return body2
+end
+return nil, lastError
+end
+local function getJson(url)
+local body, err = httpGet(url)
+if not body then
+return nil, err
+end
+local ok, decoded = pcall(function()
+return HttpService:JSONDecode(body)
+end)
+if ok and type(decoded) == "table" then
+return decoded
+end
+return nil, "bad response"
+end
+local function fetchStore(cat, token)
+local url = BASE .. "marketplace/" .. cat.typeId .. "?limit=30&pageNumber=0&sortType=" .. SORTS[sortIndex][2]
+if keyword ~= "" then
+url = url .. "&keyword=" .. HttpService:UrlEncode(keyword)
+end
+if cursor and cursor ~= "" then
+url = url .. "&cursor=" .. HttpService:UrlEncode(cursor)
+end
+local data, err = getJson(url)
+if token ~= requestToken then
+return
+end
+if not data then
+loading = false
+loadError = "Could not reach the store (" .. tostring(err) .. ")"
+render()
+return
+end
+local ids = {}
+for _, entry in ipairs(data.data or {}) do
+local id = type(entry) == "table" and entry.id or entry
+if tonumber(id) then
+table.insert(ids, tostring(math.floor(tonumber(id))))
+end
+end
+cursor = data.nextPageCursor
+local details = {}
+if #ids > 0 then
+local info = getJson(BASE .. "items/details?assetIds=" .. table.concat(ids, ","))
+if info then
+for _, entry in ipairs(info.data or {}) do
+local asset = entry.asset or entry
+if asset.id then
+details[tostring(math.floor(tonumber(asset.id) or 0))] = {
+name = asset.name,
+creator = entry.creator and entry.creator.name or nil,
+}
+end
+end
+end
+end
+if token ~= requestToken then
+return
+end
+for _, id in ipairs(ids) do
+local d = details[id] or {}
+table.insert(items, {
+id = id,
+name = tostring(d.name or ("Asset " .. id)),
+typeId = cat.typeId,
+creator = d.creator or "",
+})
+end
+loading = false
+if #ids == 0 then
+cursor = nil
+end
+render()
+end
+refresh = function(reset)
+local cat = CATS[catIndex]
+if not cat.typeId then
+render()
+return
+end
+requestToken += 1
+local token = requestToken
+if reset then
+items = {}
+cursor = nil
+end
+loading = true
+loadError = nil
+render()
+task.spawn(function()
+local ok, err = pcall(fetchStore, cat, token)
+if not ok and token == requestToken then
+loading = false
+loadError = tostring(err)
+render()
+end
+end)
+end
+local function spawnPoint()
+local position, _, forward = ctx.viewBasis()
+local anchor = ctx.findSpawn()
+local target = position + forward * PLACE_DISTANCE
+local hit = nil
+pcall(function()
+local params = RaycastParams.new()
+params.FilterType = Enum.RaycastFilterType.Exclude
+local ignore = { getFolder() }
+local localPlayer = game:GetService("Players").LocalPlayer
+if localPlayer and localPlayer.Character then
+table.insert(ignore, localPlayer.Character)
+end
+params.FilterDescendantsInstances = ignore
+local startY = math.max(position.Y, anchor.Y) + 60
+hit = game:GetService("Workspace"):Raycast(Vector3.new(target.X, startY, target.Z), Vector3.new(0, -800, 0), params)
+end)
+if hit then
+return hit.Position
+end
+return Vector3.new(target.X, anchor.Y, target.Z)
+end
+local function loadAsset(assetId)
+for _ = 1, 2 do
+local list = nil
+pcall(function()
+local container = game:GetService("InsertService"):LoadAsset(assetId)
+list = container:GetChildren()
+for _, object in ipairs(list) do
+object.Parent = nil
+end
+container:Destroy()
+end)
+if list and #list > 0 then
+return list
+end
+local ok, objects = pcall(function()
+return game:GetObjects("rbxassetid://" .. tostring(assetId))
+end)
+if ok and type(objects) == "table" and #objects > 0 then
+return objects
+end
+task.wait(0.4)
+end
+return nil
+end
+local function cfFromRecord(rec)
+if type(rec.cf) == "table" and #rec.cf >= 12 then
+local ok, cf = pcall(function()
+return CFrame.new(table.unpack(rec.cf, 1, 12))
+end)
+if ok then
+return cf
+end
+end
+return nil
+end
+local function makeSaveable(root)
+pcall(function()
+root.Archivable = true
+end)
+for _, item in ipairs(root:GetDescendants()) do
+pcall(function()
+item.Archivable = true
+end)
+end
+end
+local function placeRoot(root, cf)
+if cf then
+pcall(function()
+root:PivotTo(cf)
+end)
+else
+local point = spawnPoint()
+pcall(function()
+if root:IsA("Model") then
+local boxCFrame, size = root:GetBoundingBox()
+local pivot = root:GetPivot()
+local offset = pivot.Position - boxCFrame.Position
+root:PivotTo(CFrame.new(point + Vector3.new(0, size.Y / 2, 0) + offset) * pivot.Rotation)
+else
+root.CFrame = CFrame.new(point + Vector3.new(0, root.Size.Y / 2, 0)) * root.CFrame.Rotation
+end
+end)
+end
+root.Parent = getFolder()
+makeSaveable(root)
+end
+local function tag(root, rec)
+pcall(function()
+root:SetAttribute(UID_ATTR, rec.uid)
+root:SetAttribute("DZ_TB_ASSET", tostring(rec.id))
+end)
+end
+local function createItem(rec, restoringNow)
+local assetId = tonumber(string.match(tostring(rec.id), "%d+"))
+if not assetId then
+return false, "Invalid asset id"
+end
+local t = rec.typeId
+local texture = "rbxassetid://" .. tostring(assetId)
+local folder = getFolder()
+if t == "sky" then
+local sky = nil
+local ok = pcall(function()
+local lighting = game:GetService("Lighting")
+for _, child in ipairs(lighting:GetChildren()) do
+if child:IsA("Sky") then
+child:Destroy()
+end
+end
+sky = Instance.new("Sky")
+sky.Name = "DZHUP_Sky"
+sky.SkyboxBk, sky.SkyboxDn, sky.SkyboxFt = texture, texture, texture
+sky.SkyboxLf, sky.SkyboxRt, sky.SkyboxUp = texture, texture, texture
+sky.Parent = lighting
+end)
+if ok and sky then
+tag(sky, rec)
+return true, "Sky applied: " .. rec.name, sky
+end
+return false, "Could not apply the sky"
+end
+if t == 38 then
+if not restoringNow then
+copyText(tostring(assetId))
+end
+return true, "Plugin ID copied (install it from the Creator Store)", nil
+end
+if t == 24 then
+local animation = Instance.new("Animation")
+animation.Name = rec.name
+animation.AnimationId = texture
+animation.Parent = folder
+tag(animation, rec)
+return true, "Animation added: " .. rec.name, animation
+end
+if t == 3 then
+local sound = Instance.new("Sound")
+sound.Name = rec.name
+sound.SoundId = texture
+sound.Parent = folder
+tag(sound, rec)
+return true, "Audio added: " .. rec.name, sound
+end
+local cf = cfFromRecord(rec)
+if t == 13 then
+local part = Instance.new("Part")
+part.Name = rec.name
+part.Size = Vector3.new(6, 6, 0.4)
+part.Anchored = true
+part.Material = Enum.Material.SmoothPlastic
+part.Color = Color3.new(1, 1, 1)
+local decal = nil
+local objects = loadAsset(assetId)
+if objects then
+for _, object in ipairs(objects) do
+if object:IsA("Decal") then
+decal = object
+break
+end
+end
+end
+if not decal then
+decal = Instance.new("Decal")
+decal.Texture = texture
+end
+decal.Face = Enum.NormalId.Front
+decal.Parent = part
+placeRoot(part, cf)
+tag(part, rec)
+return true, "Decal inserted: " .. rec.name, part
+end
+if t == 4 then
+local mesh = nil
+pcall(function()
+mesh = game:GetService("InsertService"):CreateMeshPartAsync(
+texture,
+Enum.CollisionFidelity.Box,
+Enum.RenderFidelity.Automatic
+)
+end)
+if not mesh then
+mesh = Instance.new("Part")
+mesh.Size = Vector3.new(4, 4, 4)
+local special = Instance.new("SpecialMesh")
+special.MeshType = Enum.MeshType.FileMesh
+special.MeshId = texture
+special.Parent = mesh
+end
+mesh.Name = rec.name
+mesh.Anchored = true
+placeRoot(mesh, cf)
+tag(mesh, rec)
+return true, "Mesh inserted: " .. rec.name, mesh
+end
+local objects = loadAsset(assetId)
+if not objects then
+return false, "Could not load asset " .. tostring(assetId)
+end
+local root = nil
+if #objects == 1 and (objects[1]:IsA("Model") or objects[1]:IsA("BasePart")) then
+root = objects[1]
+else
+root = Instance.new("Model")
+for _, object in ipairs(objects) do
+object.Parent = root
+end
+end
+root.Name = rec.name
+local scriptCount, vehicle, mechanical = 0, false, false
+for _, descendant in ipairs(root:GetDescendants()) do
+if descendant:IsA("LuaSourceContainer") then
+scriptCount += 1
+end
+if descendant:IsA("VehicleSeat") then
+vehicle = true
+end
+if MECH[descendant.ClassName] then
+mechanical = true
+end
+end
+if vehicle then
+mechanical = true
+end
+local removed = 0
+if rec.strip == true and not vehicle then
+for _, descendant in ipairs(root:GetDescendants()) do
+if descendant:IsA("LuaSourceContainer") then
+removed += 1
+pcall(function()
+descendant:Destroy()
+end)
+end
+end
+end
+local mode = rec.anchorMode or "auto"
+local doAnchor = mode == "all" or (mode == "auto" and not mechanical)
+if doAnchor then
+if root:IsA("BasePart") then
+root.Anchored = true
+end
+for _, descendant in ipairs(root:GetDescendants()) do
+if descendant:IsA("BasePart") then
+descendant.Anchored = true
+end
+end
+end
+placeRoot(root, cf)
+tag(root, rec)
+local message = "Inserted: " .. rec.name
+if vehicle then
+message = message .. " (vehicle: kept free to drive)"
+elseif removed > 0 then
+message = message .. " (" .. removed .. " scripts removed)"
+elseif scriptCount > 0 then
+message = message .. " (" .. scriptCount .. " scripts inside)"
+end
+return true, message, root
+end
+local function insertNew(item)
+local rec = {
+uid = newUid(),
+id = tostring(item.id),
+name = tostring(item.name),
+typeId = item.typeId,
+creator = tostring(item.creator or ""),
+anchorMode = opts.anchorMode,
+strip = opts.stripScripts == true,
+}
+local ok, message, root = createItem(rec, false)
+if ok and root then
+pcall(function()
+rec.cf = { root:GetPivot():GetComponents() }
+end)
+table.insert(records(), rec)
+table.insert(history, rec.uid)
+persist()
+end
+return ok, message
+end
+local function restoreAll(force)
+if restoring or (opts.restore == false and not force) then
+return 0
+end
+restoring = true
+local count = 0
+getFolder()
+for _, rec in ipairs(table.clone(records())) do
+if rec.typeId ~= 38 and not findByUid(rec.uid) then
+local ok, success = pcall(createItem, rec, true)
+if ok and success then
+count += 1
+end
+task.wait(0.05)
+end
+end
+restoring = false
+return count
+end
+local function field(parent, x, y, w, h, placeholder)
+local box = new("TextBox", {
+Position = UDim2.fromOffset(x, y),
+Size = UDim2.fromOffset(w, h),
+BackgroundColor3 = THEME.field,
+BorderSizePixel = 0,
+ClearTextOnFocus = false,
+PlaceholderText = placeholder,
+PlaceholderColor3 = THEME.muted,
+Text = "",
+TextColor3 = THEME.text,
+TextSize = 13,
+Font = Enum.Font.GothamBold,
+TextXAlignment = Enum.TextXAlignment.Left,
+TextTruncate = Enum.TextTruncate.AtEnd,
+}, parent)
+corner(box, 9)
+new("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }, box)
+local boxStroke = stroke(box, THEME.line, 0.35, 1)
+box.Focused:Connect(function()
+tween(boxStroke, 0.18, { Color = THEME.accent, Transparency = 0 })
+end)
+box.FocusLost:Connect(function()
+tween(boxStroke, 0.18, { Color = THEME.line, Transparency = 0.35 })
+end)
+return box
+end
+local side = new("Frame", {
+Size = UDim2.fromOffset(112, 356),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
+}, page)
+corner(side, 12)
+stroke(side, THEME.line, 0.5, 1)
+textLabel(side, "TOOLBOX", {
+Position = UDim2.fromOffset(14, 10),
+Size = UDim2.new(1, -28, 0, 14),
+TextSize = 10,
+Font = Enum.Font.GothamBlack,
+TextColor3 = THEME.muted,
+})
+local sideList = new("ScrollingFrame", {
+Position = UDim2.fromOffset(6, 30),
+Size = UDim2.new(1, -12, 1, -36),
+BackgroundTransparency = 1,
+BorderSizePixel = 0,
+ScrollBarThickness = 0,
+CanvasSize = UDim2.new(),
+AutomaticCanvasSize = Enum.AutomaticSize.Y,
+ScrollingDirection = Enum.ScrollingDirection.Y,
+}, side)
+new("UIListLayout", { Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder }, sideList)
+local chips = {}
+for index, cat in ipairs(CATS) do
+if cat.key == "Favorites" then
+new("Frame", {
+Size = UDim2.new(1, -8, 0, 1),
+BackgroundColor3 = THEME.line,
+BackgroundTransparency = 0.3,
+BorderSizePixel = 0,
+LayoutOrder = index * 2 - 1,
+}, sideList)
+end
+local button = new("TextButton", {
+Text = "",
+Size = UDim2.new(1, 0, 0, 28),
+BackgroundColor3 = THEME.surface,
+BackgroundTransparency = 1,
+AutoButtonColor = false,
+BorderSizePixel = 0,
+LayoutOrder = index * 2,
+}, sideList)
+corner(button, 8)
+local bar = new("Frame", {
+Position = UDim2.fromOffset(0, 6),
+Size = UDim2.fromOffset(3, 16),
+BackgroundColor3 = THEME.accent,
+BorderSizePixel = 0,
+Visible = false,
+}, button)
+corner(bar, 2)
+local label = textLabel(button, cat.title, {
+Position = UDim2.fromOffset(12, 0),
+Size = UDim2.new(1, -40, 1, 0),
+Font = Enum.Font.GothamBlack,
+TextSize = 12,
+})
+local badge = textLabel(button, "", {
+AnchorPoint = Vector2.new(1, 0),
+Position = UDim2.new(1, -8, 0, 0),
+Size = UDim2.fromOffset(28, 28),
+TextSize = 10,
+TextColor3 = THEME.muted,
+TextXAlignment = Enum.TextXAlignment.Right,
+})
+local chip = { button = button, bar = bar, label = label, badge = badge }
+table.insert(chips, chip)
+button.MouseEnter:Connect(function()
+if catIndex ~= index then
+tween(button, 0.1, { BackgroundTransparency = 0.6 })
+end
+end)
+button.MouseLeave:Connect(function()
+if catIndex ~= index then
+tween(button, 0.1, { BackgroundTransparency = 1 })
+end
+end)
+button.Activated:Connect(function()
+catIndex = index
+if cat.typeId then
+refresh(true)
+else
+render()
+end
+end)
+end
+local function countOf(tbl)
+local n = 0
+for _ in pairs(tbl) do
+n += 1
+end
+return n
+end
+paintChips = function()
+for i, chip in ipairs(chips) do
+local active = i == catIndex
+chip.button.BackgroundColor3 = THEME.surface2
+tween(chip.button, 0.14, { BackgroundTransparency = active and 0 or 1 })
+chip.bar.Visible = active
+chip.label.TextColor3 = active and THEME.accent or THEME.text
+local cat = CATS[i]
+if cat.kind == "fav" then
+chip.badge.Text = tostring(countOf(st.fav))
+elseif cat.kind == "mine" then
+chip.badge.Text = tostring(#st.mine)
+elseif cat.kind == "placed" then
+chip.badge.Text = tostring(#records())
+end
+end
+end
+local main = new("Frame", {
+Position = UDim2.fromOffset(120, 0),
+Size = UDim2.fromOffset(468, 356),
+BackgroundTransparency = 1,
+}, page)
+local searchBox = field(main, 0, 0, 236, 32, "Search the store...")
+local stamp = 0
+searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+stamp += 1
+local mine = stamp
+task.delay(0.6, function()
+if mine ~= stamp then
+return
+end
+keyword = trim(searchBox.Text)
+if CATS[catIndex].typeId then
+refresh(true)
+else
+render()
+end
+end)
+end)
+local sortButton = makeButton(main, {
+Text = SORTS[sortIndex][1],
+Position = UDim2.fromOffset(242, 0),
+Size = UDim2.fromOffset(94, 32),
+TextSize = 12,
+}, { fill = THEME.surface2, radius = 9 })
+sortButton.Activated:Connect(function()
+sortIndex = sortIndex % #SORTS + 1
+sortButton.Text = SORTS[sortIndex][1]
+if CATS[catIndex].typeId then
+refresh(true)
+end
+end)
+local undoButton = makeButton(main, {
+Text = "Undo",
+Position = UDim2.fromOffset(342, 0),
+Size = UDim2.fromOffset(60, 32),
+TextSize = 12,
+TextColor3 = THEME.accent,
+}, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 9 })
+undoButton.Activated:Connect(function()
+while #history > 0 do
+local uid = table.remove(history)
+for _, rec in ipairs(records()) do
+if rec.uid == uid then
+local name = rec.name
+removeRecord(rec)
+persist()
+paintChips()
+if CATS[catIndex].kind == "placed" then
+render()
+end
+toast("Removed: " .. name, true)
+return
+end
+end
+end
+toast("Nothing to undo", false)
+end)
+local clearButton = makeButton(main, {
+Text = "Clear",
+Position = UDim2.fromOffset(408, 0),
+Size = UDim2.fromOffset(60, 32),
+TextSize = 12,
+TextColor3 = THEME.danger,
+}, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 9 })
+local clearArmed = false
+clearButton.Activated:Connect(function()
+if not clearArmed then
+clearArmed = true
+clearButton.Text = "Sure?"
+clearButton.TextColor3 = THEME.text
+tween(clearButton, 0.12, { BackgroundColor3 = THEME.danger })
+task.delay(2.5, function()
+if clearArmed and clearButton.Parent then
+clearArmed = false
+clearButton.Text = "Clear"
+clearButton.TextColor3 = THEME.danger
+tween(clearButton, 0.12, { BackgroundColor3 = THEME.surface })
+end
+end)
+return
+end
+clearArmed = false
+clearButton.Text = "Clear"
+clearButton.TextColor3 = THEME.danger
+tween(clearButton, 0.12, { BackgroundColor3 = THEME.surface })
+local removedCount = 0
+for _, rec in ipairs(table.clone(records())) do
+removeRecord(rec)
+removedCount += 1
+end
+for _, child in ipairs(getFolder():GetChildren()) do
+removedCount += 1
+pcall(function()
+child:Destroy()
+end)
+end
+table.clear(history)
+persist()
+paintChips()
+render()
+toast(removedCount == 0 and "Nothing to clear" or "Cleared all inserted items", removedCount > 0)
+end)
+local function optionButton(x, getText)
+local button = makeButton(main, {
+Text = "",
+Position = UDim2.fromOffset(x, 38),
+Size = UDim2.fromOffset(150, 26),
+TextSize = 11,
+}, { fill = THEME.surface2, radius = 8 })
+local function paint()
+local text, good = getText()
+button.Text = text
+button.TextColor3 = good and THEME.success or THEME.text
+end
+paint()
+return button, paint
+end
+local anchorButton, paintAnchor = optionButton(0, function()
+return "Anchor: " .. ANCHOR_TEXT[opts.anchorMode], opts.anchorMode ~= "none"
+end)
+anchorButton.Activated:Connect(function()
+opts.anchorMode = ANCHOR_CYCLE[opts.anchorMode] or "auto"
+paintAnchor()
+persist()
+if opts.anchorMode == "auto" then
+toast("Auto: cars and moving things stay free, everything else is anchored", true)
+end
+end)
+local scriptsButton, paintScripts = optionButton(159, function()
+return "Scripts: " .. (opts.stripScripts == true and "Remove" or "Keep"), false
+end)
+scriptsButton.Activated:Connect(function()
+opts.stripScripts = not (opts.stripScripts == true)
+paintScripts()
+persist()
+end)
+local restoreButton, paintRestore = optionButton(318, function()
+return "Auto restore: " .. (opts.restore == false and "Off" or "On"), opts.restore ~= false
+end)
+restoreButton.Activated:Connect(function()
+opts.restore = opts.restore == false
+paintRestore()
+persist()
+toast(opts.restore and "Items come back after Play mode" or "Auto restore is off", opts.restore)
+end)
+local addPanel = new("Frame", {
+Position = UDim2.fromOffset(0, 70),
+Size = UDim2.fromOffset(468, 38),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
+Visible = false,
+}, main)
+corner(addPanel, 10)
+stroke(addPanel, THEME.line, 0.5, 1)
+local addName = field(addPanel, 6, 4, 130, 30, "Item name...")
+local addId = field(addPanel, 140, 4, 120, 30, "ID or link...")
+local typeButton = makeButton(addPanel, {
+Text = "Type: " .. ADD_TYPES[addTypeIndex][1],
+Position = UDim2.fromOffset(264, 4),
+Size = UDim2.fromOffset(110, 30),
+TextSize = 11,
+}, { fill = THEME.surface2, radius = 8 })
+typeButton.Activated:Connect(function()
+addTypeIndex = addTypeIndex % #ADD_TYPES + 1
+typeButton.Text = "Type: " .. ADD_TYPES[addTypeIndex][1]
+end)
+local addButton = makeButton(addPanel, {
+Text = "ADD",
+Position = UDim2.fromOffset(378, 4),
+Size = UDim2.fromOffset(84, 30),
+TextSize = 12,
+Font = Enum.Font.GothamBlack,
+TextColor3 = THEME.dark,
+}, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 8 })
+addButton.Activated:Connect(function()
+local name = string.sub(trim(addName.Text), 1, 40)
+local id = string.match(addId.Text, "%d+")
+if name == "" then
+toast("Type a name for the item", false)
+return
+end
+if not id then
+toast("Type a valid asset ID", false)
+return
+end
+for _, entry in ipairs(st.mine) do
+if tostring(entry.id) == id then
+toast("This ID is already saved", false)
+return
+end
+end
+table.insert(st.mine, { id = id, name = name, typeId = ADD_TYPES[addTypeIndex][2], creator = "My IDs" })
+persist()
+addName.Text = ""
+addId.Text = ""
+render()
+toast("Item added: " .. name, true)
+end)
+local grid = new("ScrollingFrame", {
+Position = UDim2.fromOffset(0, 70),
+Size = UDim2.fromOffset(468, 286),
+BackgroundColor3 = THEME.field,
+BorderSizePixel = 0,
+ScrollBarThickness = 4,
+ScrollBarImageColor3 = THEME.muted,
+CanvasSize = UDim2.new(),
+AutomaticCanvasSize = Enum.AutomaticSize.Y,
+ScrollingDirection = Enum.ScrollingDirection.Y,
+}, main)
+corner(grid, 12)
+stroke(grid, THEME.line, 0.5, 1)
+new("UIPadding", {
+PaddingTop = UDim.new(0, 8),
+PaddingBottom = UDim.new(0, 8),
+PaddingLeft = UDim.new(0, 8),
+PaddingRight = UDim.new(0, 10),
+}, grid)
+new("UIGridLayout", {
+CellSize = UDim2.fromOffset(142, 152),
+CellPadding = UDim2.fromOffset(8, 8),
+SortOrder = Enum.SortOrder.LayoutOrder,
+}, grid)
+local statusLabel = textLabel(main, "", {
+Position = UDim2.fromOffset(0, 70),
+Size = UDim2.fromOffset(468, 286),
+Font = Enum.Font.GothamBold,
+TextSize = 14,
+TextColor3 = THEME.muted,
+TextWrapped = true,
+TextXAlignment = Enum.TextXAlignment.Center,
+Visible = false,
+})
+local STAR_ON = utf8.char(0x2605)
+local STAR_OFF = utf8.char(0x2606)
+local function actionLabel(item)
+if item.typeId == "sky" then
+return "Apply"
+elseif item.typeId == 38 then
+return "Copy ID"
+elseif item.typeId == 3 or item.typeId == 24 then
+return "Add"
+end
+return "Insert"
+end
+local function cardBase(item, index, missing)
+local card = new("Frame", {
+BackgroundColor3 = THEME.surface2,
+BorderSizePixel = 0,
+LayoutOrder = index,
+}, grid)
+corner(card, 10)
+stroke(card, THEME.line, 0.6, 1)
+local thumb = new("ImageLabel", {
+Position = UDim2.fromOffset(6, 6),
+Size = UDim2.fromOffset(130, 82),
+BackgroundColor3 = THEME.field,
+BorderSizePixel = 0,
+ScaleType = Enum.ScaleType.Fit,
+Image = "rbxthumb://type=Asset&id=" .. item.id .. "&w=150&h=150",
+}, card)
+corner(thumb, 8)
+local tagText = missing and "Missing" or (TYPE_NAMES[item.typeId] or "Item")
+local tagBox = new("Frame", {
+AnchorPoint = Vector2.new(1, 0),
+Position = UDim2.new(1, -4, 0, 4),
+Size = UDim2.fromOffset(#tagText * 6 + 12, 16),
+BackgroundColor3 = THEME.header,
+BackgroundTransparency = 0.15,
+BorderSizePixel = 0,
+}, thumb)
+corner(tagBox, 6)
+textLabel(tagBox, tagText, {
+Size = UDim2.fromScale(1, 1),
+Font = Enum.Font.GothamBlack,
+TextSize = 9,
+TextColor3 = missing and THEME.danger or THEME.accent,
+TextXAlignment = Enum.TextXAlignment.Center,
+})
+textLabel(card, item.name, {
+Position = UDim2.fromOffset(8, 92),
+Size = UDim2.new(1, -16, 0, 16),
+Font = Enum.Font.GothamBlack,
+TextSize = 12,
+TextTruncate = Enum.TextTruncate.AtEnd,
+})
+local creator = tostring(item.creator or "")
+textLabel(card, (creator ~= "" and creator or "Unknown") .. "  |  " .. item.id, {
+Position = UDim2.fromOffset(8, 108),
+Size = UDim2.new(1, -16, 0, 12),
+Font = Enum.Font.GothamBold,
+TextSize = 9,
+TextColor3 = THEME.muted,
+TextTruncate = Enum.TextTruncate.AtEnd,
+})
+return card
+end
+local ACCENT_STYLE = { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 8 }
+local function buildItemCard(item, index, canDelete)
+local card = cardBase(item, index, false)
+local insertWidth = canDelete and 70 or 98
+local label = actionLabel(item)
+local insertButton = makeButton(card, {
+Text = label,
+Position = UDim2.fromOffset(6, 124),
+Size = UDim2.fromOffset(insertWidth, 24),
+TextSize = 11,
+Font = Enum.Font.GothamBlack,
+TextColor3 = THEME.dark,
+}, ACCENT_STYLE)
+local isFav = st.fav[item.id] ~= nil
+local favButton = makeButton(card, {
+Text = isFav and STAR_ON or STAR_OFF,
+Position = UDim2.fromOffset(6 + insertWidth + 4, 124),
+Size = UDim2.fromOffset(24, 24),
+TextSize = 14,
+TextColor3 = isFav and THEME.accent or THEME.muted,
+}, { fill = THEME.surface, radius = 8 })
+local working = false
+insertButton.Activated:Connect(function()
+if working then
+return
+end
+working = true
+insertButton.Text = "..."
+task.spawn(function()
+local ok, success, message = pcall(insertNew, item)
+if not ok then
+message = tostring(success)
+success = false
+end
+toast(tostring(message), success)
+if insertButton.Parent then
+insertButton.Text = success and "Done" or "Failed"
+paintChips()
+task.wait(1.2)
+end
+if insertButton.Parent then
+insertButton.Text = label
+end
+working = false
+end)
+end)
+favButton.Activated:Connect(function()
+if st.fav[item.id] ~= nil then
+st.fav[item.id] = nil
+else
+st.fav[item.id] = { id = item.id, name = item.name, typeId = item.typeId, creator = item.creator }
+end
+persist()
+paintChips()
+if CATS[catIndex].kind == "fav" then
+render()
+return
+end
+local now = st.fav[item.id] ~= nil
+favButton.Text = now and STAR_ON or STAR_OFF
+favButton.TextColor3 = now and THEME.accent or THEME.muted
+end)
+if canDelete then
+local deleteButton = makeButton(card, {
+Text = "X",
+Position = UDim2.fromOffset(6 + insertWidth + 4 + 28, 124),
+Size = UDim2.fromOffset(24, 24),
+TextSize = 11,
+TextColor3 = THEME.danger,
+}, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
+local armed = false
+deleteButton.Activated:Connect(function()
+if not armed then
+armed = true
+deleteButton.Text = "?"
+tween(deleteButton, 0.12, { BackgroundColor3 = THEME.danger })
+task.delay(2.5, function()
+if armed and deleteButton.Parent then
+armed = false
+deleteButton.Text = "X"
+tween(deleteButton, 0.12, { BackgroundColor3 = THEME.surface })
+end
+end)
+return
+end
+for i, entry in ipairs(st.mine) do
+if tostring(entry.id) == item.id then
+table.remove(st.mine, i)
+break
+end
+end
+persist()
+render()
+toast("Removed from My IDs", true)
+end)
+end
+end
+local function buildPlacedCard(rec, index)
+local inst = findByUid(rec.uid)
+local card = cardBase(rec, index, inst == nil and rec.typeId ~= 38)
+local selectButton = makeButton(card, {
+Text = inst and "Select" or "Restore",
+Position = UDim2.fromOffset(6, 124),
+Size = UDim2.fromOffset(60, 24),
+TextSize = 11,
+Font = Enum.Font.GothamBlack,
+TextColor3 = THEME.dark,
+}, ACCENT_STYLE)
+local goButton = makeButton(card, {
+Text = "Go",
+Position = UDim2.fromOffset(70, 124),
+Size = UDim2.fromOffset(34, 24),
+TextSize = 11,
+TextColor3 = THEME.accent,
+}, { fill = THEME.surface, radius = 8 })
+local deleteButton = makeButton(card, {
+Text = "X",
+Position = UDim2.fromOffset(108, 124),
+Size = UDim2.fromOffset(28, 24),
+TextSize = 11,
+TextColor3 = THEME.danger,
+}, { fill = THEME.surface, stroke = THEME.danger, strokeTransparency = 0.6, radius = 8 })
+selectButton.Activated:Connect(function()
+local target = findByUid(rec.uid)
+if not target then
+task.spawn(function()
+local ok, success, message = pcall(createItem, rec, true)
+toast(ok and tostring(message) or tostring(success), ok and success)
+render()
+end)
+return
+end
+pcall(function()
+game:GetService("Selection"):Set({ target })
+end)
+toast("Selected: " .. rec.name, true)
+end)
+goButton.Activated:Connect(function()
+local target = findByUid(rec.uid)
+if not target then
+toast("This item is missing. Tap Restore first.", false)
+return
+end
+local ok = pcall(function()
+local position = target:GetPivot().Position
+local camera = game:GetService("Workspace").CurrentCamera
+camera.CFrame = CFrame.lookAt(position + Vector3.new(0, 12, 24), position)
+end)
+toast(ok and ("Camera moved to " .. rec.name) or "Could not move the camera", ok)
+end)
+local armed = false
+deleteButton.Activated:Connect(function()
+if not armed then
+armed = true
+deleteButton.Text = "?"
+tween(deleteButton, 0.12, { BackgroundColor3 = THEME.danger })
+task.delay(2.5, function()
+if armed and deleteButton.Parent then
+armed = false
+deleteButton.Text = "X"
+tween(deleteButton, 0.12, { BackgroundColor3 = THEME.surface })
+end
+end)
+return
+end
+removeRecord(rec)
+persist()
+render()
+toast("Deleted: " .. rec.name, true)
+end)
+end
+local function localList(entries)
+local list = {}
+local query = string.lower(keyword)
+for _, entry in ipairs(entries) do
+local name = tostring(entry.name)
+local id = tostring(entry.id)
+if query == "" or string.find(string.lower(name), query, 1, true) or string.find(id, query, 1, true) then
+table.insert(list, { id = id, name = name, typeId = entry.typeId, creator = tostring(entry.creator or ""), rec = entry })
+end
+end
+return list
+end
+render = function()
+for _, child in ipairs(grid:GetChildren()) do
+if child:IsA("GuiObject") then
+child:Destroy()
+end
+end
+paintChips()
+local cat = CATS[catIndex]
+local kind = cat.kind
+local isMine = kind == "mine"
+addPanel.Visible = isMine
+grid.Position = UDim2.fromOffset(0, isMine and 114 or 70)
+grid.Size = UDim2.fromOffset(468, isMine and 242 or 286)
+statusLabel.Position = grid.Position
+statusLabel.Size = grid.Size
+local list = items
+if kind == "fav" then
+local entries = {}
+for _, entry in pairs(st.fav) do
+table.insert(entries, entry)
+end
+table.sort(entries, function(a, b)
+return string.lower(tostring(a.name)) < string.lower(tostring(b.name))
+end)
+list = localList(entries)
+elseif isMine then
+list = localList(st.mine)
+elseif kind == "placed" then
+list = localList(records())
+end
+local lineBreak = utf8.char(10)
+if #list == 0 then
+grid.Visible = false
+statusLabel.Visible = true
+if loading then
+statusLabel.Text = "Loading from the store..."
+elseif loadError then
+statusLabel.Text = loadError .. lineBreak .. "Check that your executor allows HTTP requests, then tap the category again."
+elseif kind == "fav" then
+statusLabel.Text = "No favorites yet" .. lineBreak .. "Tap the star on any item to pin it"
+elseif isMine then
+statusLabel.Text = "Nothing saved here yet" .. lineBreak .. "Add an item by its asset ID above"
+elseif kind == "placed" then
+statusLabel.Text = "Nothing placed yet" .. lineBreak .. "Everything you insert is listed here and comes back after Play mode"
+else
+statusLabel.Text = "No results" .. lineBreak .. "Try another search or category"
+end
+return
+end
+statusLabel.Visible = false
+grid.Visible = true
+for index, item in ipairs(list) do
+if kind == "placed" then
+buildPlacedCard(item.rec, index)
+else
+buildItemCard(item, index, isMine)
+end
+end
+if cat.typeId and (cursor or loading or loadError) then
+local more = makeButton(grid, {
+Text = loading and "Loading..." or (loadError and "Retry" or "Load more"),
+LayoutOrder = 99999,
+TextSize = 13,
+Font = Enum.Font.GothamBlack,
+TextColor3 = THEME.accent,
+}, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 10 })
+more.Activated:Connect(function()
+if not loading then
+refresh(false)
+end
+end)
+end
+end
+local token = {}
+genv.DZHUP_TBToken = token
+local lastKey = ctx.placeKey()
+task.spawn(function()
+task.wait(2.5)
+local count = restoreAll(false)
+if count > 0 then
+toast("Toolbox restored " .. count .. " items", true)
+end
+paintChips()
+lastKey = ctx.placeKey()
+while genv.DZHUP_TBToken == token do
+task.wait(1.5)
+local key = ctx.placeKey()
+if key ~= lastKey or not alive(folderRef) then
+lastKey = key
+folderRef = nil
+table.clear(history)
+task.wait(2)
+local restored = restoreAll(false)
+if restored > 0 then
+toast("Toolbox restored " .. restored .. " items", true)
+end
+render()
+end
+end
+end)
+render()
+return {
+onShow = function()
+if not loadedOnce then
+loadedOnce = true
+refresh(true)
+else
+render()
+end
+end,
+}
+end,
+})
+local currentTab = 1
+do -- BLOCK modules
+H.registerModule({ key = "create", title = "Create", order = 10, page = createPage })
+H.registerModule({ key = "studio", title = "Studio", order = 20, page = studioPage })
+H.registerModule({ key = "names", title = "Names", order = 30, page = listPage, onShow = function()
+renderList()
+end })
+H.registerModule({ key = "world", title = "World", order = 40, page = worldPage })
+H.registerModule({ key = "creator", title = "Creator", order = 90, page = aboutPage })
+local ctx = {
+new = new, corner = corner, stroke = stroke, tween = tween, loop = loop,
+textLabel = textLabel, makeButton = makeButton, THEME = THEME,
+toast = showToast, trim = trim, persist = persist, save = save,
+copyText = copyText, genv = genv, on = on, hasFS = hasFS,
+viewBasis = viewBasis, findSpawn = findSpawnPosition,
+placeKey = function()
+return placeKey
+end,
+store = function(name)
+local t = save.settings[name]
+if type(t) ~= "table" then
+t = {}
+save.settings[name] = t
+end
+return t
+end,
+}
+table.sort(H.modules, function(a, b)
+return (a.order or 100) < (b.order or 100)
+end)
+for _, def in ipairs(H.modules) do
+if def.build then
+local ok, api = pcall(def.build, def.page, ctx)
+if ok then
+def.onShow = type(api) == "table" and api.onShow or def.onShow
+else
+warn("[DZHUP] Module " .. tostring(def.title) .. " could not be built: " .. tostring(api))
+end
+end
+end
+local count = #H.modules
+H.tabW = math.max(84, math.floor(588 / count))
+tabScroll.CanvasSize = UDim2.fromOffset(H.tabW * count, 0)
+tabIndicator.Size = UDim2.fromOffset(H.tabW - 8, 30)
+for i, def in ipairs(H.modules) do
+def.button = new("TextButton", {
+Position = UDim2.fromOffset((i - 1) * H.tabW, 0),
+Size = UDim2.fromOffset(H.tabW, 38),
+BackgroundTransparency = 1,
+AutoButtonColor = false,
+Text = def.title,
+Font = Enum.Font.GothamBlack,
+TextSize = 12,
+TextColor3 = THEME.text,
+ZIndex = 3,
+}, tabScroll)
+def.button.Activated:Connect(function()
+H.switchTab(i)
+end)
+end
+end -- BLOCK modules
+local function switchTab(index, instant)
+currentTab = index
+for i, def in ipairs(H.modules) do
+def.page.Visible = i == index
+if def.button then
+def.button.TextColor3 = i == index and THEME.dark or THEME.muted
+end
+end
+local x = (index - 1) * H.tabW
+local target = UDim2.fromOffset(x + 4, 4)
+if instant then
+tabIndicator.Position = target
+else
+tween(tabIndicator, 0.3, { Position = target }, Enum.EasingStyle.Quint)
+end
+pcall(function()
+local view = tabScroll.AbsoluteWindowSize.X
+local current = tabScroll.CanvasPosition.X
+if x < current then
+tabScroll.CanvasPosition = Vector2.new(x, 0)
+elseif x + H.tabW > current + view then
+tabScroll.CanvasPosition = Vector2.new(x + H.tabW - view, 0)
+end
+end)
+local def = H.modules[index]
+if def and def.onShow then
+pcall(def.onShow)
+end
+end
+H.switchTab = switchTab
+do -- BLOCK dragresize
+local resizeHandle = new("TextButton", {
+Name = "ResizeHandle",
+AnchorPoint = Vector2.new(1, 1),
+Position = UDim2.new(1, 0, 1, 0),
+Size = UDim2.fromOffset(38, 38),
+BackgroundTransparency = 1,
+Text = "",
+AutoButtonColor = false,
+Active = true,
+ZIndex = 20,
+}, panel)
+local gripDots = {}
+for row = 0, 2 do
+for col = 0, 2 - row do
+local dot = new("Frame", {
+AnchorPoint = Vector2.new(1, 1),
+Position = UDim2.new(1, -(9 + col * 6), 1, -(9 + row * 6)),
+Size = UDim2.fromOffset(3, 3),
+BackgroundColor3 = THEME.muted,
+BorderSizePixel = 0,
+ZIndex = 21,
+}, resizeHandle)
+corner(dot, 2)
+table.insert(gripDots, dot)
+end
+end
+local function tintGrip(color)
+for _, dot in ipairs(gripDots) do
+tween(dot, 0.12, { BackgroundColor3 = color })
+end
+end
+resizeHandle.MouseEnter:Connect(function()
+tintGrip(THEME.accent)
+end)
+resizeHandle.MouseLeave:Connect(function()
+tintGrip(THEME.muted)
+end)
+local function isPointer(input)
+return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+end
+local function pointOf(input)
+return Vector2.new(input.Position.X, input.Position.Y)
+end
+local dragging, resizing = false, false
+local dragStart, startOffset = Vector2.zero, Vector2.zero
+local resizeStart, startScale = Vector2.zero, 1
+header.InputBegan:Connect(function(input)
+if isPointer(input) and not resizing then
+dragging = true
+dragStart = pointOf(input)
+startOffset = Vector2.new(holder.Position.X.Offset, holder.Position.Y.Offset)
+end
+end)
+resizeHandle.InputBegan:Connect(function(input)
+if isPointer(input) and not dragging then
+resizing = true
+resizeStart = pointOf(input)
+startScale = scaler.Scale
+tintGrip(THEME.accent)
+tween(panelStroke, 0.12, { Color = THEME.accent, Transparency = 0.2 })
+end
+end)
+on(UserInputService.InputChanged, function(input)
+if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then
+return
+end
+if dragging then
+local delta = pointOf(input) - dragStart
+holder.Position = UDim2.fromOffset(startOffset.X + delta.X, startOffset.Y + delta.Y)
+clampHolder()
+elseif resizing then
+local delta = pointOf(input) - resizeStart
+local x, y = holder.Position.X.Offset, holder.Position.Y.Offset
+local target = startScale + (delta.X / PANEL_W + delta.Y / PANEL_H) / 2
+scaler.Scale = math.clamp(target, MIN_SCALE, maxScaleFor(x, y))
+end
+end)
+on(UserInputService.InputEnded, function(input)
+if not isPointer(input) then
+return
+end
+if resizing then
+resizing = false
+tintGrip(THEME.muted)
+tween(panelStroke, 0.25, { Color = THEME.line, Transparency = 0.2 })
+end
+dragging = false
+end)
+end -- BLOCK dragresize
+do -- BLOCK openclose
+local veil = new("Frame", {
+Name = "Veil",
+Size = UDim2.fromScale(1, 1),
+BackgroundColor3 = THEME.bg,
+BackgroundTransparency = 1,
+BorderSizePixel = 0,
+ZIndex = 40,
+Visible = false,
+}, panel)
+corner(veil, 16)
+local isOpen = false
+local openToken = 0
+local function hideOpenButton(token)
+tween(openButtonScale, 0.28, { Scale = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+tween(openButton, 0.28, { Rotation = 120, BackgroundTransparency = 1, TextTransparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+tween(openStroke, 0.25, { Transparency = 1 })
+task.delay(0.3, function()
+if token == openToken and isOpen then
+openButton.Visible = false
+end
+end)
+end
+local function showOpenButton(token)
+openButton.Visible = true
+openButtonScale.Scale = 0
+openButton.Rotation = -180
+openButton.BackgroundTransparency = 1
+openButton.TextTransparency = 1
+openStroke.Transparency = 1
+task.delay(0.22, function()
+if token ~= openToken or isOpen then
+return
+end
+tween(openButtonScale, 0.6, { Scale = 1 }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+tween(openButton, 0.6, { Rotation = 0 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+tween(openButton, 0.4, { BackgroundTransparency = 0.5, TextTransparency = 0.1 }, Enum.EasingStyle.Sine)
+tween(openStroke, 0.5, { Transparency = 0.45 }, Enum.EasingStyle.Sine)
+local ring = new("Frame", {
+AnchorPoint = Vector2.new(0.5, 0.5),
+Position = UDim2.new(0, 34, 0.5, 0),
+Size = UDim2.fromOffset(44, 44),
+BackgroundTransparency = 1,
+BorderSizePixel = 0,
+}, gui)
+corner(ring, 100)
+local ringLine = stroke(ring, THEME.accent, 0.1, 2.5)
+tween(ring, 0.8, { Size = UDim2.fromOffset(120, 120) }, Enum.EasingStyle.Quint)
+tween(ringLine, 0.8, { Transparency = 1, Thickness = 0.5 }, Enum.EasingStyle.Quad)
+task.delay(0.85, function()
+ring:Destroy()
+end)
+task.delay(0.45, function()
+if token ~= openToken or isOpen then
+return
+end
+tween(openButtonScale, 0.14, { Scale = 1.12 }, Enum.EasingStyle.Sine)
+task.delay(0.14, function()
+if token == openToken and not isOpen then
+tween(openButtonScale, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
+end
+end)
+end)
+end)
+end
+local function setOpen(open)
+if isOpen == open then
+return
+end
+isOpen = open
+openToken += 1
+local token = openToken
+if open then
+hideOpenButton(token)
+if not placed then
+placeInitially()
+else
+scaler.Scale = math.min(scaler.Scale, maxScaleFor(0, 0))
+clampHolder()
+end
+holder.Visible = true
+backdrop.Visible = true
+veil.Visible = true
+veil.BackgroundTransparency = 0
+panel.Position = UDim2.new(0.5, 0, 0.5, 30)
+popScale.Scale = 0.9
+tabTrack.Position = UDim2.fromOffset(16, TAB_Y + 14)
+content.Position = UDim2.fromOffset(16, CONTENT_Y + 22)
+sweep.Size = UDim2.new(0, 0, 0, 1)
+sweep.BackgroundTransparency = 0
+panelStroke.Color = THEME.accent
+panelStroke.Transparency = 0
+tween(backdrop, 0.4, { BackgroundTransparency = 0.62 })
+tween(veil, 0.45, { BackgroundTransparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0.05)
+tween(panel, 0.6, { Position = UDim2.new(0.5, 0, 0.5, 0) }, Enum.EasingStyle.Quint)
+tween(popScale, 0.6, { Scale = 1 }, Enum.EasingStyle.Quint)
+tween(panelStroke, 0.9, { Color = THEME.line, Transparency = 0.2 }, Enum.EasingStyle.Sine)
+tween(sweep, 0.7, { Size = UDim2.new(1, 0, 0, 1) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, 0.08)
+tween(sweep, 0.5, { BackgroundTransparency = 0.6 }, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, 0.6)
+tween(tabTrack, 0.5, { Position = UDim2.fromOffset(16, TAB_Y) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, 0.1)
+tween(content, 0.55, { Position = UDim2.fromOffset(16, CONTENT_Y) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out, 0.18)
+task.delay(0.55, function()
+if token == openToken and isOpen then
+veil.Visible = false
+end
+end)
+else
+veil.Visible = true
+showOpenButton(token)
+tween(backdrop, 0.22, { BackgroundTransparency = 1 })
+tween(veil, 0.2, { BackgroundTransparency = 0 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+tween(panel, 0.24, { Position = UDim2.new(0.5, 0, 0.5, 14) }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+tween(popScale, 0.24, { Scale = 0.95 }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+task.delay(0.26, function()
+if token == openToken and not isOpen then
+holder.Visible = false
+backdrop.Visible = false
+veil.Visible = false
+end
+end)
+end
+end
+openButton.Activated:Connect(function()
+setOpen(not isOpen)
+end)
+closeButton.Activated:Connect(function()
+setOpen(false)
+end)
+on(UserInputService.InputBegan, function(input, processed)
+if processed then
+return
+end
+if input.KeyCode == CONFIG.ToggleKey then
+setOpen(not isOpen)
+end
+end)
+end -- BLOCK openclose
+local busy = false
+local function setBusy(state)
+busy = state
+createButton.Text = state and "BUILDING LETTERS..." or "CREATE 3D NAME"
+createButton.TextTransparency = state and 0.35 or 0
+end
+local function cleanName(value)
+local name = string.gsub(value, "%c", "")
+name = trim(name)
+name = string.gsub(name, "%s+", " ")
+local count = utf8.len(name)
+if name == "" or not count or count > CONFIG.MaxNameLength then
+return nil
+end
+return name
+end
+local function rememberSettings()
+save.settings.last = {
+color = selectedColorIndex,
+color2 = selectedColor2Index,
+dual = dualOn,
+style = selectedStyle,
+font = selectedFont.key,
+size = studio.size,
+gap = studio.gap,
+shape = studio.shape,
+case = studio.case,
+fx = {
+glow = studio.fx.glow,
+float = studio.fx.float,
+rainbow = studio.fx.rainbow,
+sparkles = studio.fx.sparkles,
+},
+}
+end
+local function submit()
+if busy then
+return
+end
+local name = cleanName(nameBox.Text)
+if not name then
+showToast("Type a name (1 to " .. CONFIG.MaxNameLength .. " characters)", false)
+return
+end
+if #names >= CONFIG.MaxNames then
+showToast("Name limit reached. Delete one first.", false)
+return
+end
+name = applyCase(name)
+local color = selectedColor()
+local order = 0
+for _, item in ipairs(names) do
+order = math.max(order, item.order or 0)
+end
+local entry = {
+id = string.sub(string.gsub(HttpService:GenerateGUID(false), "-", ""), 1, 12),
+order = order + 1,
+name = name,
+style = selectedStyle,
+font = selectedFont.key,
+size = SIZE_VALUES[studio.size],
+gap = SPACING_VALUES[studio.gap],
+shape = studio.shape ~= "Straight" and studio.shape or nil,
+fx = currentFx(),
+color2 = dualOn and {
+math.floor(selectedColor2().R * 255 + 0.5),
+math.floor(selectedColor2().G * 255 + 0.5),
+math.floor(selectedColor2().B * 255 + 0.5),
+} or nil,
+color = {
+math.floor(color.R * 255 + 0.5),
+math.floor(color.G * 255 + 0.5),
+math.floor(color.B * 255 + 0.5),
+},
+}
+setBusy(true)
+task.spawn(function()
+local center, rotation, right = getPlacement()
+storePlacement(entry, center, rotation, right)
+local ok, group, err = pcall(buildName, entry)
+setBusy(false)
+if not ok then
+warn("[DZHUP] " .. tostring(group))
+showToast("Could not build the name. Check the console.", false)
+return
+end
+if not group then
+showToast(tostring(err or "Could not create the name"), false)
+return
+end
+table.insert(names, entry)
+rememberSettings()
+local saved = persist()
+renderList()
+local effectsOk = H.ensureEffects(false)
+if saved then
+if effectsOk then
+showToast("Name created and saved", true)
+else
+showToast("Name created (effects script could not be installed here)", true)
+end
+else
+showToast("Name created (saving is not supported here)", true)
+end
+end)
+end
+createButton.Activated:Connect(submit)
+nameBox.FocusLost:Connect(function(enterPressed)
+if enterPressed then
+submit()
+end
+end)
+do
+local last = save.settings.last
+if type(last) == "table" then
+if PALETTE[last.color] then
+selectedColorIndex = last.color
+end
+if PALETTE[last.color2] then
+selectedColor2Index = last.color2
+end
+dualOn = last.dual == true
+if FONT_BY_KEY[last.font] then
+selectedFont = FONT_BY_KEY[last.font]
+end
+if STYLE_TITLES[last.style] then
+selectedStyle = last.style
+end
+if SIZE_VALUES[last.size] then
+studio.size = last.size
+end
+if SPACING_VALUES[last.gap] then
+studio.gap = last.gap
+end
+if SHAPE_TITLES[last.shape] then
+studio.shape = last.shape
+end
+for _, item in ipairs(CASES) do
+if item.key == last.case then
+studio.case = last.case
+end
+end
+if type(last.fx) == "table" then
+for key in pairs(studio.fx) do
+studio.fx[key] = last.fx[key] == true
+end
+end
+end
+end
+setStyle(selectedStyle)
+setFont(selectedFont.key)
+refreshStudio()
+switchTab(1, true)
+updatePreview()
+renderList()
+genv.DZHUP_NameMakerCleanup = function()
+for _, c in ipairs(conns) do
+pcall(function()
+c:Disconnect()
+end)
+end
+pcall(function()
+gui:Destroy()
+end)
+pcall(function()
+clickSound:Destroy()
+end)
+end
+task.spawn(function()
+task.wait(0.5)
+H.ensureEffects(false)
+end)
+H.restoring = false
+function H.restore(waitFirst)
+if H.restoring then
+return
+end
+H.restoring = true
+local warned = false
+if waitFirst then
+task.wait(1)
+end
+H.getFolder()
+local anchor = findSpawnPosition()
+local moved = 0
+local waited = 0
+while not Workspace.CurrentCamera and waited < 5 do
+task.wait(0.25)
+waited += 0.25
+end
+local viewPosition = viewBasis()
+for _, entry in ipairs(table.clone(names)) do
+local existing = H.getFolder():FindFirstChild(modelNameOf(entry))
+if existing then
+H.hold(existing)
+pcall(H.upgrade, existing)
+pcall(H.adopt, existing)
+else
+if type(entry.center) == "table" then
+local saved = Vector3.new(entry.center[1], entry.center[2], entry.center[3])
+if flat(saved - viewPosition).Magnitude > CONFIG.RestoreMaxDistance or saved.Y > anchor.Y + 200 then
+local center, rotation, right = getPlacement(entry)
+moved += 1
+storePlacement(entry, center, rotation, right)
+end
+end
+local ok, group, err = pcall(buildName, entry)
+if (not ok or not group) and not warned then
+warned = true
+warn("[DZHUP] Could not restore saved names: " .. tostring(ok and err or group))
+end
+end
+task.wait()
+end
+if moved > 0 then
+persist()
+end
+H.restoring = false
+end
+task.spawn(H.restore, true)
+task.spawn(function()
+task.wait(1.5)
+if H.applyClock then
+pcall(H.applyClock)
+end
+end)
+task.spawn(function()
+local token = {}
+genv.DZHUP_WatchToken = token
+while genv.DZHUP_WatchToken == token do
+task.wait(1.5)
+if not H.restoring then
+local changedProject = false
+local key = computeKey()
+if key ~= placeKey then
+changedProject = true
+save.places[placeKey] = table.clone(names)
+local nextList = save.places[key]
+table.clear(names)
+if type(nextList) == "table" then
+for _, item in ipairs(nextList) do
+table.insert(names, item)
+end
+end
+save.places[key] = names
+placeKey = key
+persist()
+table.clear(templates)
+table.clear(animated)
+end
+local stale = true
+pcall(function()
+stale = not (namesFolder ~= nil and namesFolder:IsDescendantOf(game))
+end)
+if changedProject or stale then
+table.clear(animated)
+H.getFolder()
+pcall(renderList)
+if H.renderToolbox then
+pcall(H.renderToolbox)
+end
+if H.applyClock then
+pcall(H.applyClock)
+end
+task.spawn(H.restore, false)
+task.spawn(function()
+task.wait(1)
+H.ensureEffects(true)
+end)
+end
+end
+end
+end)
+for _, font in ipairs(FONTS) do
+if (not font.packId or font.packId == 0) and next(font.letterIds or {}) == nil then
+warn("[DZHUP] Font " .. font.title .. " has no asset id. Set packId in CONFIG.Fonts.")
+end
+end
+local function askNotification(title, text, yesText, onYes)
+local answered = false
+local callback = Instance.new("BindableFunction")
+callback.OnInvoke = function(choice)
+answered = true
+if choice == yesText then
+onYes()
+end
+end
+local sent = false
+for _ = 1, 8 do
+local ok = pcall(function()
+StarterGui:SetCore("SendNotification", {
+Title = title,
+Text = text,
+Duration = 15,
+Button1 = yesText,
+Button2 = "Not now",
+Callback = callback,
+})
+end)
+if ok then
+sent = true
+break
+end
+task.wait(1)
+end
+if not sent then
+callback:Destroy()
+return
+end
+local waitedNote = 0
+while not answered and waitedNote < 16 do
+task.wait(0.25)
+waitedNote += 0.25
+end
+callback:Destroy()
+end
+local function notifyCopied(text)
+pcall(function()
+StarterGui:SetCore("SendNotification", { Title = CONFIG.Creator, Text = text, Duration = 5 })
+end)
+end
+if CONFIG.PromptOnLaunch then
+task.spawn(function()
+task.wait(3)
+askNotification(CONFIG.Creator .. "  |  " .. CONFIG.Community, "Do you want to join my Discord community?", "Join", function()
+if copyText(CONFIG.Discord) then
+notifyCopied("Discord link copied. Paste it in your browser.")
+else
+notifyCopied(CONFIG.Discord)
+end
+end)
+task.wait(1)
+askNotification(CONFIG.Creator .. "  |  " .. CONFIG.Community, "Do you want to follow my WhatsApp channel?", "Follow", function()
+if copyText(CONFIG.WhatsApp) then
+notifyCopied("WhatsApp link copied. Paste it in your browser.")
+else
+notifyCopied(CONFIG.WhatsApp)
+end
+end)
+task.wait(1)
+askNotification(CONFIG.Creator .. "  |  " .. CONFIG.Community, "Do you want to follow my TikTok account?", "Follow", function()
+if copyText(CONFIG.TikTok) then
+notifyCopied("TikTok link copied. Paste it in your browser.")
+else
+notifyCopied(CONFIG.TikTok)
+end
+end)
+end)
+end
