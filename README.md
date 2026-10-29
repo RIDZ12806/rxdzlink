@@ -2,6 +2,7 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
+v15: Toolbox waits for mesh/texture preload completion (up to 35s) before insertion and reports failed asset requests; UI text is globally enlarged for readability.
 v14: Toolbox now preloads meshes before placing, puts the lowest part on the ground, never deletes real car scripts, and puts back items that fall through the floor.
 
 v13: items no longer fall in Play mode (Anchor defaults to Smart, old items get anchored); World moved inside Names;
@@ -258,6 +259,10 @@ Modern = { material = Enum.Material.SmoothPlastic, reflectance = 0.08, transpare
 }
 local function new(className, props, parent)
 local instance = Instance.new(className)
+-- Global readability bump for every UI label/button built through this helper.
+if (className == "TextLabel" or className == "TextButton" or className == "TextBox") and type(props.TextSize) == "number" then
+props.TextSize = math.floor(props.TextSize * 1.18 + 0.5)
+end
 for key, value in pairs(props) do
 instance[key] = value
 end
@@ -3787,32 +3792,55 @@ end
 return removed
 end
 function H.preload(objects)
+-- Do not insert a model merely because a short background preload task timed out.
+-- PreloadAsync reports each request; wait for completion (up to a generous limit)
+-- before the model is parented into Workspace and begins simulating.
 local list = {}
+local seen = {}
 for _, object in ipairs(objects) do
 local all = object:GetDescendants()
 table.insert(all, object)
 for _, d in ipairs(all) do
 if d:IsA("MeshPart") or d:IsA("SpecialMesh") or d:IsA("Decal") or d:IsA("Texture") or d:IsA("SurfaceAppearance") then
+if not seen[d] then
+seen[d] = true
 table.insert(list, d)
 end
 end
 end
-if #list == 0 then
-return
 end
-local done = false
+if #list == 0 then
+return true, 0
+end
+local finished, failed = false, 0
+local provider = game:GetService("ContentProvider")
 task.spawn(function()
-pcall(function()
-game:GetService("ContentProvider"):PreloadAsync(list)
+local ok = pcall(function()
+provider:PreloadAsync(list, function(_, status)
+if status ~= Enum.AssetFetchStatus.Success then
+failed += 1
+end
 end)
-done = true
+end)
+if not ok then
+failed += 1
+end
+finished = true
 end)
 local waited = 0
-while not done and waited < 10 do
+local timeout = 35
+while not finished and waited < timeout do
 task.wait(0.1)
 waited += 0.1
 end
-task.wait(0.3)
+if not finished then
+warn("[DZHUP Toolbox] Asset preload still pending after " .. tostring(timeout) .. " seconds; some Creator Store dependencies may be unavailable.")
+return false, failed
+end
+if failed > 0 then
+warn("[DZHUP Toolbox] " .. tostring(failed) .. " asset request(s) failed to preload.")
+end
+return failed == 0, failed
 end
 function H.cleanSounds(root)
 task.spawn(function()
@@ -3958,7 +3986,7 @@ local objects = loadAsset(assetId)
 if not objects then
 return false, "Could not load asset " .. tostring(assetId)
 end
-H.preload(objects)
+local preloadOK, preloadFailed = H.preload(objects)
 local hasSpatial = false
 for _, object in ipairs(objects) do
 if object:IsA("Model") or object:IsA("BasePart") then
@@ -4054,6 +4082,9 @@ placeRoot(root, cf)
 tag(root, rec)
 H.cleanSounds(root)
 local message = "Inserted: " .. rec.name
+if preloadOK == false then
+message = message .. " (warning: some assets may still be loading or unavailable: " .. tostring(preloadFailed or 0) .. ")"
+end
 if badRemoved > 0 then
 message = message .. " (" .. badRemoved .. " suspicious scripts removed)"
 end
