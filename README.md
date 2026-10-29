@@ -2,10 +2,11 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
-v22: Placing in front of the camera is back. Scripts are also registered in Studio Lite's own script table (searched at runtime) and the scan is printed in Output.
-v21: script code is restored from the file, with a decompile fallback and a clear report in Output.
-v20: Models arrive complete: the store file is downloaded. Toolbox options row removed, cleaner design.
-v19: Toolbox inserts items untouched (nothing is deleted, anchored or replaced).
+v23: Diag button (Toolbox sidebar) compares native vs inserted Tune modules.
+v22: Placing in front of the camera is back. Scripts are also registered in Studio Lite's own script table (searched at runtime).
+v21: script code is restored from the file, with a decompile fallback.
+v20: Models arrive complete. Toolbox options row removed, cleaner design.
+v19: Toolbox inserts items untouched.
 
 v18: Auto-removes blocked texture overlays, replaces blocked MeshParts with physics-safe blocks, and relocates a bundled A-Chassis Tune module when found; missing tune is safely anchored and reported.
 v14: Toolbox now preloads meshes before placing, puts the lowest part on the ground, never deletes real car scripts, and puts back items that fall through the floor.
@@ -4163,7 +4164,7 @@ return 0, "getgc failed"
 end
 local targets = {}
 for _, tbl in ipairs(list) do
-if type(tbl) == "table" then
+if type(tbl) == "table" and not rawequal(tbl, appliedSource) then
 local instKeys, strKeys, total = 0, 0, 0
 local sampleKey, sampleVal = nil, nil
 pcall(function()
@@ -4223,6 +4224,85 @@ if #targets == 0 then
 return 0, "Studio Lite's script table was not found"
 end
 return written
+end
+-- Diagnosis: compares how Tune modules look and where they are referenced (native vs inserted here)
+function H.diagnose()
+local gc = genv.getgc or _G.getgc
+local list = nil
+if type(gc) == "function" then
+local ok, res = pcall(gc, true)
+if ok and type(res) == "table" then
+list = res
+end
+end
+local tunes = {}
+for _, d in ipairs(svc("Workspace"):GetDescendants()) do
+if d:IsA("LuaSourceContainer") and string.find(string.lower(d.Name), "tune", 1, true) then
+table.insert(tunes, d)
+end
+end
+warn("[DZ-DIAG] tune modules in Workspace: " .. #tunes .. " | getgc: " .. tostring(list ~= nil))
+for _, T in ipairs(tunes) do
+local attrs = {}
+for k in pairs(T:GetAttributes()) do
+table.insert(attrs, k)
+end
+local kids = {}
+for _, c in ipairs(T:GetChildren()) do
+table.insert(kids, c.ClassName .. ":" .. c.Name)
+end
+local srcLen = -1
+pcall(function()
+srcLen = #T.Source
+end)
+local mine = false
+local a = T
+while a and a ~= game do
+if a:GetAttribute(UID_ATTR) then
+mine = true
+end
+a = a.Parent
+end
+local parentName = T.Parent and T.Parent.Name or "nil"
+warn("[DZ-DIAG] " .. (mine and "MINE" or "NATIVE") .. " | " .. T.ClassName .. " | parent=" .. parentName .. " | attrs=" .. table.concat(attrs, ",") .. " | kids=" .. table.concat(kids, ",") .. " | source=" .. srcLen)
+if list then
+local combo = T.ClassName .. T.Name
+local found = 0
+for _, tbl in ipairs(list) do
+if type(tbl) == "table" and not rawequal(tbl, appliedSource) and not rawequal(tbl, list) then
+local hit, total, keyType, valType = nil, 0, nil, nil
+pcall(function()
+for k, v in pairs(tbl) do
+total += 1
+if total > 3000 then
+break
+end
+if k == T then
+hit, keyType, valType = "key", typeof(k), typeof(v)
+break
+elseif v == T then
+hit, keyType, valType = "value", typeof(k), typeof(v)
+break
+elseif type(k) == "string" and (k == combo or k == T.Name) then
+hit, keyType, valType = "name key", typeof(k), typeof(v)
+break
+end
+end
+end)
+if hit then
+found += 1
+if found <= 4 then
+warn("[DZ-DIAG]    referenced as " .. hit .. " in a table of ~" .. total .. " entries (key " .. tostring(keyType) .. ", value " .. tostring(valType) .. ")")
+end
+end
+end
+end
+if found == 0 then
+warn("[DZ-DIAG]    not referenced by any table")
+end
+end
+end
+warn("[DZ-DIAG] done")
 end
 local function createItem(rec, restoringNow)
 local assetId = tonumber(string.match(tostring(rec.id), "%d+"))
@@ -4606,6 +4686,16 @@ TextSize = 13,
 Font = Enum.Font.GothamBlack,
 TextColor3 = THEME.muted,
 })
+local diagButton = makeButton(side, {
+Text = "Diag",
+Position = UDim2.fromOffset(76, 6),
+Size = UDim2.fromOffset(46, 22),
+TextSize = 11,
+}, { fill = THEME.surface2, radius = 7 })
+diagButton.Activated:Connect(function()
+toast("Diagnosis printed in Output", true)
+task.spawn(H.diagnose)
+end)
 local sideList = new("ScrollingFrame", {
 Position = UDim2.fromOffset(6, 30),
 Size = UDim2.new(1, -12, 1, -36),
