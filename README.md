@@ -2,7 +2,7 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
-v17: Reports exact failed visual asset IDs; checks all embedded sounds and removes sounds that are unavailable/unauthorized. v16 parent-first visual preload retained.
+v18: Auto-removes blocked texture overlays, replaces blocked MeshParts with physics-safe blocks, and relocates a bundled A-Chassis Tune module when found; missing tune is safely anchored and reported.
 v14: Toolbox now preloads meshes before placing, puts the lowest part on the ground, never deletes real car scripts, and puts back items that fall through the floor.
 
 v13: items no longer fall in Play mode (Anchor defaults to Smart, old items get anchored); World moved inside Names;
@@ -3896,6 +3896,105 @@ end
 end
 end)
 end
+function H.repairFailedVisuals(root, failedIds)
+local failed = {}
+for _, entry in ipairs(failedIds or {}) do
+local id = string.match(tostring(entry), "(%d+)")
+if id then failed[id] = true end
+end
+local removedOverlays, replacedMeshes = 0, 0
+local function matches(value)
+local id = string.match(tostring(value or ""), "(%d+)")
+return id and failed[id]
+end
+local function replaceMeshPart(old)
+local ok, replacement = pcall(function()
+local part = Instance.new("Part")
+part.Name = old.Name
+part.Size = old.Size
+part.CFrame = old.CFrame
+part.Color = old.Color
+part.Material = old.Material
+part.Transparency = old.Transparency
+part.Reflectance = old.Reflectance
+part.Anchored = old.Anchored
+part.CanCollide = old.CanCollide
+part.CanTouch = old.CanTouch
+part.CanQuery = old.CanQuery
+part.Massless = old.Massless
+part.CastShadow = old.CastShadow
+part.TopSurface = old.TopSurface
+part.BottomSurface = old.BottomSurface
+part.Parent = old.Parent
+for _, child in ipairs(old:GetChildren()) do child.Parent = part end
+for _, joint in ipairs(root:GetDescendants()) do
+pcall(function() if joint.Part0 == old then joint.Part0 = part end end)
+pcall(function() if joint.Part1 == old then joint.Part1 = part end end)
+end
+old:Destroy()
+return part
+end)
+if ok and replacement then replacedMeshes += 1 end
+end
+local list = root:GetDescendants()
+if root:IsA("BasePart") then table.insert(list, root) end
+for _, item in ipairs(list) do
+if item.Parent then
+if item:IsA("MeshPart") and matches(item.MeshId) then
+replaceMeshPart(item)
+elseif item:IsA("SpecialMesh") and matches(item.MeshId) then
+item:Destroy()
+removedOverlays += 1
+elseif (item:IsA("Decal") or item:IsA("Texture")) and matches(item.Texture) then
+item:Destroy()
+removedOverlays += 1
+elseif item:IsA("SurfaceAppearance") and (matches(item.ColorMap) or matches(item.MetalnessMap) or matches(item.NormalMap) or matches(item.RoughnessMap)) then
+item:Destroy()
+removedOverlays += 1
+end
+end
+end
+return removedOverlays, replacedMeshes
+end
+function H.repairChassisModule(root)
+local function key(name)
+return string.lower(string.gsub(tostring(name), "[^%w]", ""))
+end
+local modules = {}
+for _, item in ipairs(root:GetDescendants()) do
+if item:IsA("ModuleScript") then
+local n = key(item.Name)
+if string.find(n, "achassistune", 1, true) or n == "achassischunetune" then
+modules[#modules + 1] = item
+end
+end
+end
+if #modules == 0 then
+return false, "A-Chassis Tune module was not included in this asset"
+end
+local sourceModule = modules[1]
+local installed = 0
+-- Put the found tune module at the vehicle root and beside chassis-named scripts,
+-- where common A-Chassis layouts search for it.
+if sourceModule.Parent ~= root then
+sourceModule.Parent = root
+installed += 1
+end
+for _, item in ipairs(root:GetDescendants()) do
+if item:IsA("BaseScript") and string.find(key(item.Name), "chassis", 1, true) then
+local parent = item.Parent
+if parent and parent ~= root and not parent:FindFirstChild(sourceModule.Name) then
+local ok, clone = pcall(function() return sourceModule:Clone() end)
+if ok and clone then
+clone.Parent = parent
+installed += 1
+end
+end
+end
+end
+return true, installed
+end
+
 local function createItem(rec, restoringNow)
 local assetId = tonumber(string.match(tostring(rec.id), "%d+"))
 if not assetId then
@@ -4106,17 +4205,40 @@ if root:IsA("BasePart") then
 anchorStates[root] = root.Anchored
 root.Anchored = true
 end
-local preloadOK, preloadFailed = H.preload(root)
+local preloadOK, preloadFailed, preloadIds = H.preload(root)
+local overlayFallbacks, meshFallbacks = 0, 0
+if preloadOK == false and preloadIds then
+overlayFallbacks, meshFallbacks = H.repairFailedVisuals(root, preloadIds)
+end
+local tuneOK, tuneResult = true, 0
+if vehicle then
+tuneOK, tuneResult = H.repairChassisModule(root)
+end
 for part, wasAnchored in pairs(anchorStates) do
 if part.Parent then
 part.Anchored = wasAnchored
 end
 end
+-- If the vehicle asset omitted its required tune module, keep it safely in place
+-- rather than letting a broken chassis fall apart during Play.
+if vehicle and not tuneOK then
+for _, part in ipairs(root:GetDescendants()) do
+if part:IsA("BasePart") then part.Anchored = true end
+end
+if root:IsA("BasePart") then root.Anchored = true end
+end
 tag(root, rec)
 H.cleanSounds(root)
 local message = "Inserted: " .. rec.name
-if preloadOK == false then
-message = message .. " (warning: " .. tostring(preloadFailed or 0) .. " visual resources unavailable; check permissions)"
+if overlayFallbacks > 0 or meshFallbacks > 0 then
+message = message .. " (auto-repair: " .. tostring(overlayFallbacks) .. " blocked texture(s) removed, " .. tostring(meshFallbacks) .. " blocked mesh(es) replaced with physics-safe blocks)"
+elseif preloadOK == false then
+message = message .. " (warning: " .. tostring(preloadFailed or 0) .. " visual requests failed; see Output)"
+end
+if vehicle and tuneOK then
+message = message .. " (A-Chassis Tune found/relocated: " .. tostring(tuneResult) .. ")"
+elseif vehicle and not tuneOK then
+message = message .. " (A-Chassis Tune missing; vehicle anchored safely, driving cannot be restored without the original module)"
 end
 if badRemoved > 0 then
 message = message .. " (" .. badRemoved .. " suspicious scripts removed)"
