@@ -2,7 +2,7 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
-v16: Parent model first, temporarily anchor it, then preload visual dependencies from Workspace before releasing physics; sounds excluded from visual failure counts. UI text enlarged.
+v17: Reports exact failed visual asset IDs; checks all embedded sounds and removes sounds that are unavailable/unauthorized. v16 parent-first visual preload retained.
 v14: Toolbox now preloads meshes before placing, puts the lowest part on the ground, never deletes real car scripts, and puts back items that fall through the floor.
 
 v13: items no longer fall in Play mode (Anchor defaults to Smart, old items get anchored); World moved inside Names;
@@ -3820,17 +3820,20 @@ if #list == 0 then
 return true, 0
 end
 local finished, failed = false, 0
+local failedIds = {}
 local provider = game:GetService("ContentProvider")
 task.spawn(function()
 local ok = pcall(function()
-provider:PreloadAsync(list, function(_, status)
+provider:PreloadAsync(list, function(contentId, status)
 if status ~= Enum.AssetFetchStatus.Success then
 failed += 1
+table.insert(failedIds, tostring(contentId) .. " (" .. tostring(status) .. ")")
 end
 end)
 end)
 if not ok then
 failed += 1
+table.insert(failedIds, "PreloadAsync exception")
 end
 finished = true
 end)
@@ -3845,30 +3848,36 @@ warn("[DZHUP Toolbox] Visual asset preload is still pending after " .. tostring(
 return false, failed
 end
 if failed > 0 then
-warn("[DZHUP Toolbox] " .. tostring(failed) .. " visual asset request(s) failed; check asset permissions/availability.")
+warn("[DZHUP Toolbox] " .. tostring(failed) .. " visual asset request(s) failed; check asset permissions/availability. IDs: " .. table.concat(failedIds, ", "))
 end
-return failed == 0, failed
+return failed == 0, failed, failedIds
 end
 function H.cleanSounds(root)
 task.spawn(function()
 local sounds = {}
 for _, item in ipairs(root:GetDescendants()) do
-if item:IsA("Sound") and item.SoundId ~= "" and string.sub(item.SoundId, 1, 8) ~= "rbxasset" then
+if item:IsA("Sound") and item.SoundId ~= "" then
 table.insert(sounds, item)
 end
 end
 if #sounds == 0 then
 return
 end
+local failed = {}
 local provider = game:GetService("ContentProvider")
 pcall(function()
-provider:PreloadAsync(sounds)
+provider:PreloadAsync(sounds, function(contentId, status)
+if status ~= Enum.AssetFetchStatus.Success then
+failed[tostring(contentId)] = true
+warn("[DZHUP Toolbox] Sound asset unavailable/unauthorized: " .. tostring(contentId) .. " (" .. tostring(status) .. ")")
+end
+end)
 end)
 local waited = 0
 while waited < 4 do
 local pending = false
 for _, sound in ipairs(sounds) do
-if sound.Parent and not sound.IsLoaded then
+if sound.Parent and not sound.IsLoaded and not failed[sound.SoundId] then
 pending = true
 end
 end
@@ -3879,7 +3888,7 @@ task.wait(0.25)
 waited += 0.25
 end
 for _, sound in ipairs(sounds) do
-if sound.Parent and not sound.IsLoaded then
+if sound.Parent and (failed[sound.SoundId] or not sound.IsLoaded) then
 pcall(function()
 sound:Destroy()
 end)
