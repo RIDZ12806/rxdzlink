@@ -2,6 +2,9 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
+v12: FIX for Play mode errors. Scripts that come with a model (A-Chassis Tune, car scripts) now stay NEXT TO the model;
+random-named / obfuscated scripts (free-model viruses) are removed on insert; sounds that cannot load are removed.
+
 v11: SEPARATE SYSTEMS + new professional Toolbox.
 - Each tool is its own module (H.registerModule) with its own tab, page and saved data.
   Names = Create / Style / Saved (one menu). Toolbox = its own menu. World, Creator = own menus.
@@ -3692,6 +3695,88 @@ return svc("Lighting"), "Lighting"
 end
 return nil
 end
+-- v12: safety helpers (suspicious scripts + sounds that cannot load)
+function H.isBadScript(object)
+if not object:IsA("LuaSourceContainer") then
+return false
+end
+local name = object.Name
+-- random looking names like aUfZyMaAjMHxvqfUF (only letters, many case switches)
+if #name >= 10 and string.match(name, "^%a+$") then
+local switches = 0
+for i = 2, #name do
+local a, b = string.sub(name, i - 1, i - 1), string.sub(name, i, i)
+if string.match(a, "%l") and string.match(b, "%u") then
+switches += 1
+end
+end
+if switches >= 5 and switches / #name >= 0.25 then
+return true
+end
+end
+-- obfuscated loaders (only when the editor lets us read the source)
+local ok, source = pcall(function()
+return object.Source
+end)
+if ok and type(source) == "string" and #source > 0 then
+if string.find(source, "loadstring", 1, true) or string.find(source, "getfenv", 1, true)
+or string.find(source, "require%(%s*%d%d%d%d%d+%s*%)") then
+return true
+end
+end
+return false
+end
+function H.cleanScripts(root)
+local removed = 0
+local list = root:GetDescendants()
+for _, item in ipairs(list) do
+if H.isBadScript(item) then
+removed += 1
+pcall(function()
+item:Destroy()
+end)
+end
+end
+return removed
+end
+function H.cleanSounds(root)
+task.spawn(function()
+local sounds = {}
+for _, item in ipairs(root:GetDescendants()) do
+if item:IsA("Sound") and item.SoundId ~= "" and string.sub(item.SoundId, 1, 8) ~= "rbxasset" then
+table.insert(sounds, item)
+end
+end
+if #sounds == 0 then
+return
+end
+local provider = game:GetService("ContentProvider")
+pcall(function()
+provider:PreloadAsync(sounds)
+end)
+local waited = 0
+while waited < 4 do
+local pending = false
+for _, sound in ipairs(sounds) do
+if sound.Parent and not sound.IsLoaded then
+pending = true
+end
+end
+if not pending then
+break
+end
+task.wait(0.25)
+waited += 0.25
+end
+for _, sound in ipairs(sounds) do
+if sound.Parent and not sound.IsLoaded then
+pcall(function()
+sound:Destroy()
+end)
+end
+end
+end)
+end
 local function createItem(rec, restoringNow)
 local assetId = tonumber(string.match(tostring(rec.id), "%d+"))
 if not assetId then
@@ -3798,18 +3883,40 @@ local objects = loadAsset(assetId)
 if not objects then
 return false, "Could not load asset " .. tostring(assetId)
 end
+local hasSpatial = false
+for _, object in ipairs(objects) do
+if object:IsA("Model") or object:IsA("BasePart") then
+hasSpatial = true
+end
+end
 local spatial, routedNames = {}, {}
 local firstRouted = nil
+local badRemoved = 0
 for _, object in ipairs(objects) do
-local target, label = routeTarget(object)
+if H.isBadScript(object) then
+badRemoved += 1
+pcall(function()
+object:Destroy()
+end)
+else
+-- v12: scripts that come WITH a model (cars, doors...) stay next to it,
+-- so things like "A-Chassis Tune" are found again in Play mode.
+local keepInside = hasSpatial and object:IsA("LuaSourceContainer")
+local target, label = nil, nil
+if not keepInside then
+target, label = routeTarget(object)
+end
 if target then
 object.Parent = target
 makeSaveable(object)
 tag(object, rec)
+badRemoved += H.cleanScripts(object)
+H.cleanSounds(object)
 firstRouted = firstRouted or object
 table.insert(routedNames, object.Name .. " > " .. label)
 else
 table.insert(spatial, object)
+end
 end
 end
 if #spatial == 0 then
@@ -3828,6 +3935,7 @@ object.Parent = root
 end
 end
 root.Name = rec.name
+badRemoved += H.cleanScripts(root)
 local scriptCount, vehicle, mechanical = 0, false, false
 for _, descendant in ipairs(root:GetDescendants()) do
 if descendant:IsA("LuaSourceContainer") then
@@ -3868,7 +3976,11 @@ end
 end
 placeRoot(root, cf)
 tag(root, rec)
+H.cleanSounds(root)
 local message = "Inserted: " .. rec.name
+if badRemoved > 0 then
+message = message .. " (" .. badRemoved .. " suspicious scripts removed)"
+end
 if vehicle then
 message = message .. " (vehicle)"
 end
