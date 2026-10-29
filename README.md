@@ -2,9 +2,10 @@
 DZ HUP  |  Studio Tools  (Executor Edition)  =  3D Name Maker + Toolbox
 Made by RiyadoDzz
 
-v19: TOOLBOX REBUILT. Items are inserted exactly like the real Studio Toolbox (nothing is changed, scripts/sounds/anchoring stay as the store made them);
-tap any item for a big preview with info, Copy ID, Copy link, Favorite and Save; new Insert-by-ID bar (ID or link, auto type detect); cleaner layout.
-Optional switches: Anchor, Scripts, Restore, Safe (Safe is OFF by default).
+v20: Models now arrive COMPLETE: the store file is downloaded and the code of every script is restored (like Studio Lite's own Toolbox: Loading model / Extracting).
+Toolbox options row removed, cleaner design, Insert-by-ID bar, big preview page with Copy ID.
+
+v19: Toolbox inserts items untouched (nothing is deleted, anchored or replaced).
 
 v18: Auto-removes blocked texture overlays, replaces blocked MeshParts with physics-safe blocks, and relocates a bundled A-Chassis Tune module when found; missing tune is safely anchored and reported.
 v14: Toolbox now preloads meshes before placing, puts the lowest part on the ground, never deletes real car scripts, and puts back items that fall through the floor.
@@ -3365,7 +3366,8 @@ persist()
 end
 local opts = st.opts
 -- v19: items are inserted exactly like the real Toolbox (nothing is changed) unless you turn an option on
-if opts.v19 ~= true then
+if opts.v20 ~= true then
+opts.v20 = true
 opts.v19 = true
 opts.anchorMode = "none"
 opts.safeMode = false
@@ -3830,6 +3832,288 @@ end)
 end
 end)
 end
+-- v20: the store file is downloaded and the CODE of every script is read from it,
+-- so models arrive complete (cars, doors...) and not as empty shells.
+local function u32(s, p)
+local a, b, c, d = string.byte(s, p, p + 3)
+return a + b * 256 + c * 65536 + d * 16777216
+end
+local function lz4(src, pos, compLen)
+local out, op = {}, 0
+local ip, iend = pos, pos + compLen
+local guard = 0
+while ip < iend do
+local token = string.byte(src, ip)
+ip += 1
+local lit = bit32.rshift(token, 4)
+if lit == 15 then
+local b
+repeat
+b = string.byte(src, ip)
+ip += 1
+lit += b
+until b ~= 255
+end
+for i = 0, lit - 1 do
+out[op + 1 + i] = string.byte(src, ip + i)
+end
+op += lit
+ip += lit
+if ip >= iend then
+break
+end
+local offset = string.byte(src, ip) + string.byte(src, ip + 1) * 256
+ip += 2
+local ml = bit32.band(token, 15)
+if ml == 15 then
+local b
+repeat
+b = string.byte(src, ip)
+ip += 1
+ml += b
+until b ~= 255
+end
+ml += 4
+local from = op - offset
+for i = 1, ml do
+out[op + i] = out[from + i]
+end
+op += ml
+guard += 1
+if guard % 3000 == 0 then
+task.wait()
+end
+end
+local parts = {}
+for i = 1, op, 4096 do
+local j = math.min(i + 4095, op)
+parts[#parts + 1] = string.char(table.unpack(out, i, j))
+end
+return table.concat(parts)
+end
+local function readInts(s, pos, n)
+local vals = {}
+for i = 0, n - 1 do
+local b0 = string.byte(s, pos + i)
+local b1 = string.byte(s, pos + n + i)
+local b2 = string.byte(s, pos + n * 2 + i)
+local b3 = string.byte(s, pos + n * 3 + i)
+local v = b0 * 16777216 + b1 * 65536 + b2 * 256 + b3
+if v % 2 == 0 then
+v = v / 2
+else
+v = -((v + 1) / 2)
+end
+vals[i + 1] = v
+end
+return vals, pos + n * 4
+end
+local function accumulate(vals)
+local acc = 0
+for i, v in ipairs(vals) do
+acc += v
+vals[i] = acc
+end
+return vals
+end
+local function parseRbxm(data)
+if string.sub(data, 1, 8) ~= "<roblox!" then
+return nil, "not a binary model"
+end
+local pos = 33
+local classes, insts, roots = {}, {}, {}
+while pos + 15 <= #data do
+local cname4 = string.sub(data, pos, pos + 3)
+local compLen = u32(data, pos + 4)
+local rawLen = u32(data, pos + 8)
+local dpos = pos + 16
+local chunk
+if compLen == 0 then
+chunk = string.sub(data, dpos, dpos + rawLen - 1)
+pos = dpos + rawLen
+else
+chunk = lz4(data, dpos, compLen)
+pos = dpos + compLen
+end
+if string.sub(cname4, 1, 3) == "END" then
+break
+end
+if cname4 == "INST" then
+local classId = u32(chunk, 1)
+local nlen = u32(chunk, 5)
+local className = string.sub(chunk, 9, 8 + nlen)
+local p = 9 + nlen
+local count = u32(chunk, p + 1)
+local refs = accumulate((readInts(chunk, p + 5, count)))
+classes[classId] = { refs = refs }
+for _, r in ipairs(refs) do
+insts[r] = { class = className, children = {} }
+end
+elseif cname4 == "PROP" then
+local classId = u32(chunk, 1)
+local plen = u32(chunk, 5)
+local pname = string.sub(chunk, 9, 8 + plen)
+local p = 9 + plen
+local ptype = string.byte(chunk, p)
+p += 1
+local cls = classes[classId]
+if cls and ptype == 1 and (pname == "Name" or pname == "Source") then
+for _, r in ipairs(cls.refs) do
+local len = u32(chunk, p)
+local str = string.sub(chunk, p + 4, p + 3 + len)
+p += 4 + len
+if insts[r] then
+if pname == "Name" then
+insts[r].name = str
+else
+insts[r].source = str
+end
+end
+end
+end
+elseif cname4 == "PRNT" then
+local count = u32(chunk, 2)
+local kids, nextPos = readInts(chunk, 6, count)
+accumulate(kids)
+local pars = accumulate((readInts(chunk, nextPos, count)))
+for i = 1, count do
+local child, parent = kids[i], pars[i]
+if parent == -1 then
+roots[#roots + 1] = child
+elseif insts[parent] then
+table.insert(insts[parent].children, child)
+end
+end
+end
+end
+local out = {}
+local function walk(list, parentKey)
+local counters = {}
+for _, r in ipairs(list) do
+local inst = insts[r]
+if inst then
+local base = inst.class .. ":" .. tostring(inst.name or inst.class)
+counters[base] = (counters[base] or 0) + 1
+local key = parentKey .. "/" .. base .. "#" .. counters[base]
+if inst.source and inst.source ~= "" then
+out[key] = inst.source
+end
+walk(inst.children, key)
+end
+end
+end
+walk(roots, "")
+return out
+end
+local function fetchRaw(url)
+local ok, body = pcall(function()
+return game:HttpGet(url)
+end)
+if ok and type(body) == "string" and #body > 40 then
+return body
+end
+for _, key in ipairs({ "request", "http_request" }) do
+local fn = genv[key] or _G[key]
+if type(fn) == "function" then
+local ok2, resp = pcall(fn, { Url = url, Method = "GET" })
+if ok2 and type(resp) == "table" and type(resp.Body) == "string" and #resp.Body > 40 and (resp.StatusCode == nil or resp.StatusCode == 200) then
+return resp.Body
+end
+end
+end
+if type(genv.syn) == "table" and type(genv.syn.request) == "function" then
+local ok3, resp = pcall(genv.syn.request, { Url = url, Method = "GET" })
+if ok3 and type(resp) == "table" and type(resp.Body) == "string" and #resp.Body > 40 then
+return resp.Body
+end
+end
+return nil
+end
+local function downloadAsset(assetId)
+for _, url in ipairs({
+"https://assetdelivery.roblox.com/v1/asset/?id=" .. tostring(assetId),
+"https://assetdelivery.roblox.com/v1/asset?id=" .. tostring(assetId),
+}) do
+local body = fetchRaw(url)
+if body and string.sub(body, 1, 8) == "<roblox!" then
+return body
+end
+end
+local info = getJson("https://apis.roblox.com/asset-delivery-api/v1/assetId/" .. tostring(assetId))
+if info and type(info.location) == "string" then
+local body = fetchRaw(info.location)
+if body and string.sub(body, 1, 8) == "<roblox!" then
+return body
+end
+end
+return nil
+end
+local function setSource(inst, src)
+local methods = {
+function()
+inst.Source = src
+end,
+function()
+setscriptable(inst, "Source", true)
+inst.Source = src
+end,
+function()
+sethiddenproperty(inst, "Source", src)
+end,
+}
+for _, method in ipairs(methods) do
+local ok = pcall(method)
+if ok then
+local readOk, back = pcall(function()
+return inst.Source
+end)
+if not readOk or back == src or (type(back) == "string" and #back > 0) then
+return true
+end
+end
+end
+return false
+end
+function H.applySources(objects, assetId)
+local body = downloadAsset(assetId)
+if not body then
+return 0, 0, "the file could not be downloaded"
+end
+local ok, sources = pcall(parseRbxm, body)
+if not ok or type(sources) ~= "table" then
+return 0, 0, "the file could not be read"
+end
+local idx = {}
+local function index(list, parentKey)
+local counters = {}
+for _, inst in ipairs(list) do
+local base = inst.ClassName .. ":" .. inst.Name
+counters[base] = (counters[base] or 0) + 1
+local key = parentKey .. "/" .. base .. "#" .. counters[base]
+idx[key] = inst
+index(inst:GetChildren(), key)
+end
+end
+index(objects, "")
+for _, name in ipairs({ "setthreadidentity", "set_thread_identity", "setidentity", "set_identity", "setthreadcontext" }) do
+local fn = genv[name] or _G[name]
+if type(fn) == "function" and pcall(fn, 8) then
+break
+end
+end
+local good, bad = 0, 0
+for key, src in pairs(sources) do
+local inst = idx[key]
+if inst and inst:IsA("LuaSourceContainer") then
+if setSource(inst, src) then
+good += 1
+else
+bad += 1
+end
+end
+end
+return good, bad
+end
 local function createItem(rec, restoringNow)
 local assetId = tonumber(string.match(tostring(rec.id), "%d+"))
 if not assetId then
@@ -3937,6 +4221,7 @@ local objects = loadAsset(assetId)
 if not objects then
 return false, "Could not load asset " .. tostring(assetId) .. ". Check your internet and try again."
 end
+local srcGood, srcBad, srcNote = H.applySources(objects, assetId)
 local safe = opts.safeMode == true
 local hasSpatial = false
 for _, object in ipairs(objects) do
@@ -4070,6 +4355,17 @@ if removed > 0 then
 message = message .. " (" .. removed .. " scripts removed)"
 elseif scriptCount > 0 then
 message = message .. " (" .. scriptCount .. " scripts inside, kept)"
+end
+if scriptCount > 0 then
+if srcGood > 0 then
+message = message .. " (" .. srcGood .. " scripts loaded with their code)"
+end
+if srcBad > 0 then
+message = message .. " (" .. srcBad .. " scripts could not receive their code)"
+end
+if srcGood == 0 and srcBad == 0 and srcNote then
+message = message .. " (script code not read: " .. srcNote .. ")"
+end
 end
 if removedBad > 0 then
 message = message .. " (Safe: " .. removedBad .. " suspicious items removed)"
@@ -4228,9 +4524,16 @@ BorderSizePixel = 0,
 Visible = false,
 }, button)
 corner(bar, 2)
+local dot = new("Frame", {
+Position = UDim2.fromOffset(10, 13),
+Size = UDim2.fromOffset(6, 6),
+BackgroundColor3 = ({ THEME.accent, THEME.success, THEME.discord, THEME.danger, THEME.tiktok, THEME.muted, THEME.accentSoft, THEME.whatsapp, THEME.text })[index] or THEME.accent,
+BorderSizePixel = 0,
+}, button)
+corner(dot, 3)
 local label = textLabel(button, cat.title, {
-Position = UDim2.fromOffset(12, 0),
-Size = UDim2.new(1, -38, 1, 0),
+Position = UDim2.fromOffset(24, 0),
+Size = UDim2.new(1, -50, 1, 0),
 Font = Enum.Font.GothamBlack,
 TextSize = 13,
 TextTruncate = Enum.TextTruncate.AtEnd,
@@ -4390,68 +4693,19 @@ paintChips()
 render()
 toast(removedCount == 0 and "Nothing to clear" or ("Removed " .. removedCount .. " inserted items"), removedCount > 0)
 end)
-local function optionButton(x, getText)
-local button = makeButton(main, {
-Text = "",
-Position = UDim2.fromOffset(x, 40),
-Size = UDim2.fromOffset(110, 28),
-TextSize = 12,
-}, { fill = THEME.surface2, radius = 8 })
-local function paint()
-local text, good = getText()
-button.Text = text
-button.TextColor3 = good and THEME.success or THEME.text
-end
-paint()
-return button, paint
-end
-local anchorButton, paintAnchor = optionButton(0, function()
-return "Anchor: " .. ANCHOR_TEXT[opts.anchorMode], opts.anchorMode ~= "none"
-end)
-anchorButton.Activated:Connect(function()
-opts.anchorMode = ANCHOR_CYCLE[opts.anchorMode] or "none"
-paintAnchor()
-persist()
-if opts.anchorMode == "none" then
-toast("Off: items stay exactly as the store made them", true)
-elseif opts.anchorMode == "auto" then
-toast("Smart: cars and moving things stay free, the rest is anchored", true)
-else
-toast("All: everything is anchored", true)
-end
-end)
-local scriptsButton, paintScripts = optionButton(114, function()
-return "Scripts: " .. (opts.stripScripts == true and "Remove" or "Keep"), false
-end)
-scriptsButton.Activated:Connect(function()
-opts.stripScripts = not (opts.stripScripts == true)
-paintScripts()
-persist()
-toast(opts.stripScripts and "Scripts of the next items will be removed" or "Scripts are kept (like the real Toolbox)", true)
-end)
-local restoreButton, paintRestore = optionButton(228, function()
-return "Restore: " .. (opts.restore == false and "Off" or "On"), opts.restore ~= false
-end)
-restoreButton.Activated:Connect(function()
-opts.restore = opts.restore == false
-paintRestore()
-persist()
-toast(opts.restore and "Items come back after Play mode" or "Auto restore is off", opts.restore)
-end)
-local safeButton, paintSafe = optionButton(342, function()
-return "Safe: " .. (opts.safeMode == true and "On" or "Off"), opts.safeMode == true
-end)
-safeButton.Activated:Connect(function()
-opts.safeMode = not (opts.safeMode == true)
-paintSafe()
-persist()
-toast(opts.safeMode and "Safe on: random-named scripts and dead sounds are removed" or "Safe off: items are inserted untouched", true)
-end)
 -- insert by ID bar
-local idBox = field(main, 0, 74, 220, 32, "Paste asset ID or link...")
+local idCard = new("Frame", {
+Position = UDim2.fromOffset(0, 38),
+Size = UDim2.fromOffset(452, 38),
+BackgroundColor3 = THEME.surface,
+BorderSizePixel = 0,
+}, main)
+corner(idCard, 10)
+stroke(idCard, THEME.accent, 0.7, 1)
+local idBox = field(main, 3, 41, 217, 32, "Insert by ID: paste an asset ID or link...")
 local typeButton = makeButton(main, {
 Text = "Type: " .. ID_TYPES[idTypeIndex][1],
-Position = UDim2.fromOffset(224, 74),
+Position = UDim2.fromOffset(224, 41),
 Size = UDim2.fromOffset(104, 32),
 TextSize = 13,
 }, { fill = THEME.surface2, radius = 9 })
@@ -4462,7 +4716,7 @@ end)
 local ACCENT_STYLE = { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 8 }
 local idInsert = makeButton(main, {
 Text = "Insert",
-Position = UDim2.fromOffset(332, 74),
+Position = UDim2.fromOffset(332, 41),
 Size = UDim2.fromOffset(66, 32),
 TextSize = 14,
 Font = Enum.Font.GothamBlack,
@@ -4470,8 +4724,8 @@ TextColor3 = THEME.dark,
 }, { fill = THEME.accent, hover = THEME.accentSoft, stroke = THEME.accentSoft, strokeTransparency = 0.5, radius = 9 })
 local idSave = makeButton(main, {
 Text = "Save",
-Position = UDim2.fromOffset(402, 74),
-Size = UDim2.fromOffset(50, 32),
+Position = UDim2.fromOffset(400, 41),
+Size = UDim2.fromOffset(49, 32),
 TextSize = 14,
 TextColor3 = THEME.accent,
 }, { fill = THEME.surface, stroke = THEME.accent, strokeTransparency = 0.6, radius = 9 })
@@ -4494,6 +4748,7 @@ return
 end
 idBusy = true
 idInsert.Text = "..."
+toast("Loading model... extracting scripts, please wait", true)
 task.spawn(function()
 local item = resolveItem(id)
 local ok, success, message = pcall(insertNew, item)
@@ -4541,8 +4796,8 @@ idBusy = false
 end)
 end)
 local grid = new("ScrollingFrame", {
-Position = UDim2.fromOffset(0, 112),
-Size = UDim2.fromOffset(452, 280),
+Position = UDim2.fromOffset(0, 82),
+Size = UDim2.fromOffset(452, 310),
 BackgroundColor3 = THEME.field,
 BorderSizePixel = 0,
 ScrollBarThickness = 4,
@@ -4565,8 +4820,8 @@ CellPadding = UDim2.fromOffset(8, 8),
 SortOrder = Enum.SortOrder.LayoutOrder,
 }, grid)
 local statusLabel = textLabel(main, "", {
-Position = UDim2.fromOffset(0, 112),
-Size = UDim2.fromOffset(452, 280),
+Position = UDim2.fromOffset(0, 82),
+Size = UDim2.fromOffset(452, 310),
 Font = Enum.Font.GothamBold,
 TextSize = 16,
 TextColor3 = THEME.muted,
@@ -4592,6 +4847,7 @@ return
 end
 button:SetAttribute("Busy", true)
 button.Text = "..."
+toast("Loading model... extracting scripts, please wait", true)
 task.spawn(function()
 local ok, success, message = pcall(insertNew, item)
 if not ok then
@@ -4863,11 +5119,12 @@ toast("Saved to My IDs: " .. tostring(detailItem.name), true)
 end)
 local function cardBase(item, index, missing)
 local card = new("Frame", {
-BackgroundColor3 = THEME.surface2,
+BackgroundColor3 = Color3.new(1, 1, 1),
 BorderSizePixel = 0,
 LayoutOrder = index,
 }, grid)
 corner(card, 10)
+new("UIGradient", { Color = ColorSequence.new(THEME.surface2, THEME.surface), Rotation = 90 }, card)
 local cardStroke = stroke(card, THEME.line, 0.6, 1)
 local thumb = new("ImageLabel", {
 Position = UDim2.fromOffset(6, 6),
